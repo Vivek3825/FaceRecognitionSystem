@@ -1,0 +1,30 @@
+# Virtual Environment
+venv/
+.venv/
+airport_face_rec_env/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# VS Code settings
+.vscode/
+
+# Model checkpoints and large files
+*.h5
+*.pyd
+*.dll
+*.so
+*.dylib
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environment variables
+.env
