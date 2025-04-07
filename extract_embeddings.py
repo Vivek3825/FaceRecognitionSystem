@@ -43,7 +43,7 @@ successful = 0
 not_found = 0
 no_face = 0
 skipped = 0
-all_embeddings = {}  # For combined NPZ storage
+all_embeddings = {}  # For combined NPZ storage 
 
 for row in metadata:
     sr_no, name, person_id, image_path = row
