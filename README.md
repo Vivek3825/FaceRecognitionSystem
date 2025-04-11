@@ -12,3 +12,6 @@
 <h5>recognize.py created to recognize faces through camera</h5>
 <h5>DroidCam is used to access mobile camera</h5>
 <h5>model recognizing faces and showing details</h5>
+
+<h5>Removed embeding folder we directtly used embedding from all_embeddings.npz file</h5>
+<h5>Currently there are 33 embedding in all_embeddings.npz file</h5>
