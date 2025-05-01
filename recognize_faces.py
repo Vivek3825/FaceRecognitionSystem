@@ -14,7 +14,7 @@ app = FaceAnalysis(name='buffalo_l')
 app.prepare(ctx_id=-1)
 
 # Confidence threshold for recognition
-CONFIDENCE_THRESHOLD = 0.6  # Set for better accuracy
+CONFIDENCE_THRESHOLD = 0.5  # Set for better accuracy
 FRAME_WIDTH, FRAME_HEIGHT = 640, 480  # Standard frame size
 
 # Paths
