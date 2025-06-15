@@ -11,7 +11,7 @@ import torch.nn.functional as F
 # === Paths ===
 EMBEDDING_NPZ = "dataset/embeddings/all_embeddings.npz"
 EMBEDDING_CSV = "dataset/embeddings/embeddings.csv"
-TEST_IMAGE = "dataset/images/p1_front.jpeg"
+TEST_IMAGE = "dataset/test_images/test1.jpeg"
 THRESHOLD = 0.6
 
 # === Load model and detector ===

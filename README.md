@@ -130,3 +130,46 @@ You now have a **complete offline face recognition system** that:
 * Generates embeddings
 * Stores them efficiently
 * Matches faces with high accuracy
+
+
+
+----------------------------------------------------
+
+
+
+
+# 🆕 Latest Update – Real-Time Face Recognition (v3)
+
+We've successfully added and improved the **real-time face recognition system** using pre-extracted face embeddings.
+
+
+## What's New:
+
+**Multiple Face Recognition**: System can now detect and recognize **more than one face simultaneously**.
+**Stable Face Matching**:
+
+  * Uses **cosine similarity** with margin-based comparison to avoid false positives.
+  * Confidence levels: `high`, `medium`, `low` are shown based on similarity and margin.
+**Embedding Sync**:
+
+  * Embeddings are loaded from `dataset/embeddings/all_embeddings.npz`.
+  * Metadata (name, ID, image path) loaded from `dataset/embeddings/embeddings.csv`.
+**No Dummy or .pkl Files**: Entire pipeline now uses `.csv` and `.npz` files only.
+**Detection Quality Improvements**:
+
+  * Skips detections with low confidence.
+  * Adds bounding box color based on match confidence.
+**Better Visual Output**: Names and match scores are shown live on the webcam feed.
+
+
+## 🧠 Matching Logic:
+
+If score ≥ 0.75 and margin ≥ 0.05 → high_confidence (✔️ match)
+If 0.65 ≤ score < 0.75 and margin ≥ 0.08 → medium_confidence (possible match)
+Else → low_confidence (Unknown)
+
+
+## 🧪 Example Recognition Output:
+
+🎯 Vivek Avhad: 0.89 (high_confidence)
+🎯 Unknown: 0.42 (low_confidence)
