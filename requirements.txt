@@ -34,3 +34,8 @@ torchvision==0.17.2
 tqdm==4.67.1
 typing_extensions==4.14.0
 urllib3==2.4.0
+
+# NEW ADDITIONS - Added August 25, 2025 for Multi-Camera System
+# GUI and parallel processing dependencies
+# tkinter - Built-in with Python, no need to install
+# threading - Built-in with Python, no need to install
