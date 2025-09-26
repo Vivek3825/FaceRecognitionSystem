@@ -399,6 +399,15 @@ class AeroSecure {
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => this.cancelRegistration());
         }
+
+        // Individual retake buttons
+        const retakeButtons = document.querySelectorAll('.retake-angle-btn');
+        retakeButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const angle = e.target.closest('.retake-angle-btn').dataset.angle;
+                this.retakeSpecificAngle(angle);
+            });
+        });
     }
 
     async loadAvailableCameras() {
@@ -785,6 +794,7 @@ class AeroSecure {
         const imageSlot = document.querySelector(`.image-slot[data-angle="${angle}"]`);
         const statusIndicator = document.getElementById(`${angle}-status`);
         const imageElement = document.getElementById(`${angle}-image`);
+        const retakeBtn = document.getElementById(`retake-${angle}`);
 
         if (imageSlot) {
             imageSlot.classList.add('captured');
@@ -799,6 +809,10 @@ class AeroSecure {
             imageElement.src = imageData;
             imageElement.style.display = 'block';
             imageElement.parentElement.querySelector('.image-placeholder').style.display = 'none';
+        }
+
+        if (retakeBtn) {
+            retakeBtn.style.display = 'block';
         }
     }
 
@@ -832,10 +846,28 @@ class AeroSecure {
         // Remove captured image
         delete this.registrationData.capturedImages[angle];
         
-        // Reset UI
+        // Reset UI for this angle
+        this.resetAngleUI(angle);
+        
+        // Restart camera if needed
+        if (!this.registrationData.cameraStream) {
+            this.startCameraStream();
+        }
+        
+        // Disable register button if not all angles captured
+        const registerBtn = document.getElementById('register-person');
+        if (registerBtn && Object.keys(this.registrationData.capturedImages).length < 3) {
+            registerBtn.disabled = true;
+        }
+
+        this.showNotification(`${angle.charAt(0).toUpperCase() + angle.slice(1)} image removed - ready to retake`, 'info');
+    }
+
+    resetAngleUI(angle) {
         const imageSlot = document.querySelector(`.image-slot[data-angle="${angle}"]`);
         const statusIndicator = document.getElementById(`${angle}-status`);
         const imageElement = document.getElementById(`${angle}-image`);
+        const retakeBtn = document.getElementById(`retake-${angle}`);
 
         if (imageSlot) imageSlot.classList.remove('captured');
         
@@ -849,12 +881,41 @@ class AeroSecure {
             imageElement.parentElement.querySelector('.image-placeholder').style.display = 'flex';
         }
 
-        // Restart camera if needed
+        if (retakeBtn) {
+            retakeBtn.style.display = 'none';
+        }
+    }
+
+    retakeSpecificAngle(angle) {
+        // Switch to the specified angle
+        this.registrationData.currentAngle = angle;
+        
+        // Remove the captured image for this angle
+        delete this.registrationData.capturedImages[angle];
+        
+        // Reset UI for this angle
+        this.resetAngleUI(angle);
+        
+        // Update instruction and current angle display
+        this.updateAngleInstruction();
+        
+        // Start camera if not already running
         if (!this.registrationData.cameraStream) {
             this.startCameraStream();
         }
+        
+        // Enable capture and retake buttons
+        const captureBtn = document.getElementById('capture-photo');
+        const retakeBtn = document.getElementById('retake-photo');
+        
+        if (captureBtn) captureBtn.disabled = false;
+        if (retakeBtn) retakeBtn.disabled = false;
+        
+        // Disable register button
+        const registerBtn = document.getElementById('register-person');
+        if (registerBtn) registerBtn.disabled = true;
 
-        this.showNotification(`${angle.charAt(0).toUpperCase() + angle.slice(1)} image removed`, 'info');
+        this.showNotification(`Ready to retake ${angle} image`, 'info');
     }
 
     async handleRegistrationSubmit(e) {
@@ -952,6 +1013,7 @@ class AeroSecure {
             const imageSlot = document.querySelector(`.image-slot[data-angle="${angle}"]`);
             const statusIndicator = document.getElementById(`${angle}-status`);
             const imageElement = document.getElementById(`${angle}-image`);
+            const retakeBtn = document.getElementById(`retake-${angle}`);
 
             if (imageSlot) imageSlot.classList.remove('captured');
             
@@ -963,6 +1025,10 @@ class AeroSecure {
             if (imageElement) {
                 imageElement.style.display = 'none';
                 imageElement.parentElement.querySelector('.image-placeholder').style.display = 'flex';
+            }
+
+            if (retakeBtn) {
+                retakeBtn.style.display = 'none';
             }
         });
         
