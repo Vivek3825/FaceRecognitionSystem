@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AeroSecure - Airport Security System</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/animations.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="radar-scanner">
+                <div class="radar-circle"></div>
+                <div class="radar-line"></div>
+                <div class="radar-dots">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+            <h2 class="loading-text">INITIALIZING AEROSECURE</h2>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div id="main-container" class="main-container hidden">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>AeroSecure</span>
+                </div>
+                <div class="system-status">
+                    <span class="status-indicator active"></span>
+                    <span class="status-text">System Active</span>
+                </div>
+            </div>
+            <div class="header-center">
+                <div class="time-display">
+                    <span id="current-time"></span>
+                </div>
+                <div class="date-display">
+                    <span id="current-date"></span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="alert-level">
+                    <span class="alert-text">Security Level: </span>
+                    <span class="alert-status normal">NORMAL</span>
+                </div>
+                <div class="user-profile">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Officer Smith</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="sidebar">
+            <div class="nav-menu">
+                <a href="#dashboard" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#camera-monitor" class="nav-item" data-page="camera-monitor">
+                    <i class="fas fa-video"></i>
+                    <span>Camera Monitor</span>
+                </a>
+                <a href="#person-search" class="nav-item" data-page="person-search">
+                    <i class="fas fa-search"></i>
+                    <span>Person Search</span>
+                </a>
+                <a href="#add-person" class="nav-item" data-page="add-person">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Add Person</span>
+                </a>
+                <a href="#watchlist" class="nav-item" data-page="watchlist">
+                    <i class="fas fa-eye"></i>
+                    <span>Watchlist</span>
+                </a>
+                <a href="#access-control" class="nav-item" data-page="access-control">
+                    <i class="fas fa-key"></i>
+                    <span>Access Control</span>
+                </a>
+                <a href="#reports" class="nav-item" data-page="reports">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Reports</span>
+                </a>
+                <a href="#settings" class="nav-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <div id="dashboard" class="page active">
+                <div class="page-header">
+                    <h1>Security Dashboard</h1>
+                    <div class="page-actions">
+                        <button class="btn-primary">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <!-- Live Stats -->
+                    <div class="card stats-card">
+                        <h3>Live Statistics</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <span class="stat-number">1,247</span>
+                                    <span class="stat-label">People Scanned Today</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon alert">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <span class="stat-number">3</span>
+                                    <span class="stat-label">Active Alerts</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon">
+                                    <i class="fas fa-video"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <span class="stat-number">24/24</span>
+                                    <span class="stat-label">Cameras Online</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon success">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <span class="stat-number">98.7%</span>
+                                    <span class="stat-label">Recognition Accuracy</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Alerts -->
+                    <div class="card alerts-card">
+                        <h3>Recent Security Alerts</h3>
+                        <div class="alerts-list">
+                            <div class="alert-item high">
+                                <div class="alert-icon">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                </div>
+                                <div class="alert-content">
+                                    <div class="alert-title">Watchlist Match Detected</div>
+                                    <div class="alert-details">Terminal B, Gate 12 - 14:23</div>
+                                </div>
+                                <div class="alert-time">2 min ago</div>
+                            </div>
+                            <div class="alert-item medium">
+                                <div class="alert-icon">
+                                    <i class="fas fa-user-times"></i>
+                                </div>
+                                <div class="alert-content">
+                                    <div class="alert-title">Unauthorized Access Attempt</div>
+                                    <div class="alert-details">Restricted Area A - 14:15</div>
+                                </div>
+                                <div class="alert-time">10 min ago</div>
+                            </div>
+                            <div class="alert-item low">
+                                <div class="alert-icon">
+                                    <i class="fas fa-camera"></i>
+                                </div>
+                                <div class="alert-content">
+                                    <div class="alert-title">Camera Maintenance Required</div>
+                                    <div class="alert-details">Camera #15 - Departure Hall</div>
+                                </div>
+                                <div class="alert-time">1 hour ago</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Health -->
+                    <div class="card system-health">
+                        <h3>System Health Monitor</h3>
+                        <div class="health-metrics">
+                            <div class="metric">
+                                <span class="metric-label">CPU Usage</span>
+                                <div class="metric-bar">
+                                    <div class="metric-fill" style="width: 65%"></div>
+                                </div>
+                                <span class="metric-value">65%</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Memory</span>
+                                <div class="metric-bar">
+                                    <div class="metric-fill" style="width: 42%"></div>
+                                </div>
+                                <span class="metric-value">42%</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Storage</span>
+                                <div class="metric-bar">
+                                    <div class="metric-fill" style="width: 78%"></div>
+                                </div>
+                                <span class="metric-value">78%</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Network</span>
+                                <div class="metric-bar">
+                                    <div class="metric-fill success" style="width: 95%"></div>
+                                </div>
+                                <span class="metric-value">95%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="card quick-actions">
+                        <h3>Quick Actions</h3>
+                        <div class="action-buttons">
+                            <button class="action-btn" onclick="showPage('person-search')">
+                                <i class="fas fa-search"></i>
+                                <span>Search Person</span>
+                            </button>
+                            <button class="action-btn" onclick="showPage('add-person')">
+                                <i class="fas fa-user-plus"></i>
+                                <span>Add New Person</span>
+                            </button>
+                            <button class="action-btn" onclick="showPage('camera-monitor')">
+                                <i class="fas fa-video"></i>
+                                <span>Monitor Cameras</span>
+                            </button>
+                            <button class="action-btn">
+                                <i class="fas fa-bell"></i>
+                                <span>View All Alerts</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera Monitor Page -->
+            <div id="camera-monitor" class="page">
+                <div class="page-header">
+                    <h1>Camera Monitor</h1>
+                    <div class="page-actions">
+                        <button class="btn-secondary">
+                            <i class="fas fa-expand"></i>
+                            Full Screen
+                        </button>
+                        <button class="btn-primary">
+                            <i class="fas fa-record-vinyl"></i>
+                            Record All
+                        </button>
+                    </div>
+                </div>
+
+                <div class="camera-grid">
+                    <div class="camera-feed active">
+                        <div class="camera-header">
+                            <span class="camera-name">Terminal A - Main Entrance</span>
+                            <span class="camera-status online">LIVE</span>
+                        </div>
+                        <div class="camera-display">
+                            <div class="scanning-overlay">
+                                <div class="scan-line"></div>
+                            </div>
+                            <div class="detection-box">
+                                <div class="detection-info">
+                                    <span>Person Detected</span>
+                                    <span>Confidence: 94%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="camera-controls">
+                            <button class="control-btn"><i class="fas fa-search-plus"></i></button>
+                            <button class="control-btn"><i class="fas fa-search-minus"></i></button>
+                            <button class="control-btn"><i class="fas fa-arrows-alt"></i></button>
+                            <button class="control-btn"><i class="fas fa-record-vinyl"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="camera-feed">
+                        <div class="camera-header">
+                            <span class="camera-name">Terminal B - Security Checkpoint</span>
+                            <span class="camera-status online">LIVE</span>
+                        </div>
+                        <div class="camera-display">
+                            <div class="scanning-overlay">
+                                <div class="scan-line"></div>
+                            </div>
+                        </div>
+                        <div class="camera-controls">
+                            <button class="control-btn"><i class="fas fa-search-plus"></i></button>
+                            <button class="control-btn"><i class="fas fa-search-minus"></i></button>
+                            <button class="control-btn"><i class="fas fa-arrows-alt"></i></button>
+                            <button class="control-btn"><i class="fas fa-record-vinyl"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="camera-feed">
+                        <div class="camera-header">
+                            <span class="camera-name">Departure Hall - Gate Area</span>
+                            <span class="camera-status online">LIVE</span>
+                        </div>
+                        <div class="camera-display">
+                            <div class="scanning-overlay">
+                                <div class="scan-line"></div>
+                            </div>
+                        </div>
+                        <div class="camera-controls">
+                            <button class="control-btn"><i class="fas fa-search-plus"></i></button>
+                            <button class="control-btn"><i class="fas fa-search-minus"></i></button>
+                            <button class="control-btn"><i class="fas fa-arrows-alt"></i></button>
+                            <button class="control-btn"><i class="fas fa-record-vinyl"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="camera-feed">
+                        <div class="camera-header">
+                            <span class="camera-name">Baggage Claim - Carousel 3</span>
+                            <span class="camera-status online">LIVE</span>
+                        </div>
+                        <div class="camera-display">
+                            <div class="scanning-overlay">
+                                <div class="scan-line"></div>
+                            </div>
+                        </div>
+                        <div class="camera-controls">
+                            <button class="control-btn"><i class="fas fa-search-plus"></i></button>
+                            <button class="control-btn"><i class="fas fa-search-minus"></i></button>
+                            <button class="control-btn"><i class="fas fa-arrows-alt"></i></button>
+                            <button class="control-btn"><i class="fas fa-record-vinyl"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="camera-sidebar">
+                    <div class="camera-list">
+                        <h3>All Cameras</h3>
+                        <div class="camera-item active">
+                            <span class="camera-indicator online"></span>
+                            <span class="camera-name">Terminal A - Main</span>
+                            <span class="camera-viewers">3</span>
+                        </div>
+                        <div class="camera-item">
+                            <span class="camera-indicator online"></span>
+                            <span class="camera-name">Terminal B - Security</span>
+                            <span class="camera-viewers">1</span>
+                        </div>
+                        <div class="camera-item">
+                            <span class="camera-indicator online"></span>
+                            <span class="camera-name">Departure Hall</span>
+                            <span class="camera-viewers">2</span>
+                        </div>
+                        <div class="camera-item">
+                            <span class="camera-indicator online"></span>
+                            <span class="camera-name">Baggage Claim</span>
+                            <span class="camera-viewers">0</span>
+                        </div>
+                        <div class="camera-item">
+                            <span class="camera-indicator online"></span>
+                            <span class="camera-name">Parking Lot A</span>
+                            <span class="camera-viewers">1</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Person Search Page -->
+            <div id="person-search" class="page">
+                <div class="page-header">
+                    <h1>Person Search</h1>
+                    <div class="page-actions">
+                        <button class="btn-secondary">
+                            <i class="fas fa-filter"></i>
+                            Advanced Filter
+                        </button>
+                    </div>
+                </div>
+
+                <div class="search-container">
+                    <div class="search-panel">
+                        <div class="search-section">
+                            <h3>Search by Photo</h3>
+                            <div class="photo-upload-area" id="photo-upload">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Drop an image here or click to upload</p>
+                                <input type="file" id="photo-input" accept="image/*" hidden>
+                            </div>
+                        </div>
+
+                        <div class="search-section">
+                            <h3>Search by Details</h3>
+                            <div class="form-group">
+                                <input type="text" placeholder="Full Name" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <input type="text" placeholder="ID Number" class="form-input">
+                            </div>
+                            <div class="form-group">
+                                <select class="form-select">
+                                    <option>Access Level</option>
+                                    <option>Public</option>
+                                    <option>Staff</option>
+                                    <option>Security</option>
+                                    <option>VIP</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <input type="date" class="form-input">
+                            </div>
+                            <button class="btn-primary search-btn">
+                                <i class="fas fa-search"></i>
+                                Search Database
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="search-results">
+                        <div class="results-header">
+                            <h3>Search Results</h3>
+                            <span class="results-count">Found 3 matches</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <div class="result-photo">
+                                <div class="photo-placeholder">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="match-percentage">96% Match</div>
+                            </div>
+                            <div class="result-info">
+                                <h4>John Anderson</h4>
+                                <p><strong>ID:</strong> EMP001234</p>
+                                <p><strong>Access Level:</strong> Staff</p>
+                                <p><strong>Department:</strong> Ground Operations</p>
+                                <p><strong>Last Seen:</strong> Terminal B - 14:30</p>
+                                <div class="result-status active">Active</div>
+                            </div>
+                            <div class="result-actions">
+                                <button class="btn-small btn-primary">View Details</button>
+                                <button class="btn-small btn-secondary">Track Location</button>
+                            </div>
+                        </div>
+
+                        <div class="result-item">
+                            <div class="result-photo">
+                                <div class="photo-placeholder">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="match-percentage">89% Match</div>
+                            </div>
+                            <div class="result-info">
+                                <h4>Sarah Mitchell</h4>
+                                <p><strong>ID:</strong> SEC005678</p>
+                                <p><strong>Access Level:</strong> Security</p>
+                                <p><strong>Department:</strong> Airport Security</p>
+                                <p><strong>Last Seen:</strong> Security Office - 13:45</p>
+                                <div class="result-status active">Active</div>
+                            </div>
+                            <div class="result-actions">
+                                <button class="btn-small btn-primary">View Details</button>
+                                <button class="btn-small btn-secondary">Track Location</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Person Page -->
+            <div id="add-person" class="page">
+                <div class="page-header">
+                    <h1>Add New Person</h1>
+                    <div class="page-actions">
+                        <button class="btn-secondary">
+                            <i class="fas fa-save"></i>
+                            Save Draft
+                        </button>
+                    </div>
+                </div>
+
+                <div class="add-person-container">
+                    <form class="person-form">
+                        <div class="form-sections">
+                            <div class="form-section">
+                                <h3>Personal Information</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>First Name</label>
+                                        <input type="text" class="form-input" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Last Name</label>
+                                        <input type="text" class="form-input" required>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Employee/Visitor ID</label>
+                                        <input type="text" class="form-input" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Date of Birth</label>
+                                        <input type="date" class="form-input">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Email</label>
+                                        <input type="email" class="form-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Phone</label>
+                                        <input type="tel" class="form-input">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h3>Access & Security</h3>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Access Level</label>
+                                        <select class="form-select" required>
+                                            <option value="">Select Access Level</option>
+                                            <option value="public">Public - General Areas</option>
+                                            <option value="staff">Staff - Employee Areas</option>
+                                            <option value="security">Security - Restricted Areas</option>
+                                            <option value="vip">VIP - All Areas</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Department</label>
+                                        <input type="text" class="form-input">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Valid From</label>
+                                        <input type="date" class="form-input" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Valid Until</label>
+                                        <input type="date" class="form-input" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Special Notes</label>
+                                    <textarea class="form-textarea" rows="3" placeholder="Any special security notes or instructions..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="photo-section">
+                            <h3>Photo Capture</h3>
+                            <div class="photo-capture-area">
+                                <div class="capture-preview">
+                                    <div class="camera-view">
+                                        <i class="fas fa-camera"></i>
+                                        <p>Click to activate camera</p>
+                                    </div>
+                                    <div class="capture-guide">
+                                        <div class="guide-overlay">
+                                            <div class="face-outline"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="capture-controls">
+                                    <button type="button" class="btn-secondary">
+                                        <i class="fas fa-video"></i>
+                                        Start Camera
+                                    </button>
+                                    <button type="button" class="btn-primary">
+                                        <i class="fas fa-camera"></i>
+                                        Capture Photo
+                                    </button>
+                                    <button type="button" class="btn-secondary">
+                                        <i class="fas fa-upload"></i>
+                                        Upload Photo
+                                    </button>
+                                </div>
+                                <div class="photo-requirements">
+                                    <h4>Photo Requirements:</h4>
+                                    <ul>
+                                        <li>Face should be clearly visible</li>
+                                        <li>Good lighting conditions</li>
+                                        <li>Neutral facial expression</li>
+                                        <li>No sunglasses or hat</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary">Cancel</button>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-user-plus"></i>
+                                Add Person to Database
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Other pages will be added here -->
+            <div id="watchlist" class="page">
+                <div class="page-header">
+                    <h1>Security Watchlist</h1>
+                    <div class="page-actions">
+                        <button class="btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Add to Watchlist
+                        </button>
+                    </div>
+                </div>
+                <div class="coming-soon">
+                    <i class="fas fa-eye"></i>
+                    <h2>Watchlist Management</h2>
+                    <p>Coming Soon - Manage security watchlist and alerts</p>
+                </div>
+            </div>
+
+            <div id="access-control" class="page">
+                <div class="page-header">
+                    <h1>Access Control</h1>
+                </div>
+                <div class="coming-soon">
+                    <i class="fas fa-key"></i>
+                    <h2>Access Control System</h2>
+                    <p>Coming Soon - Manage door access and security zones</p>
+                </div>
+            </div>
+
+            <div id="reports" class="page">
+                <div class="page-header">
+                    <h1>Security Reports</h1>
+                </div>
+                <div class="coming-soon">
+                    <i class="fas fa-chart-line"></i>
+                    <h2>Analytics & Reports</h2>
+                    <p>Coming Soon - Security analytics and reporting dashboard</p>
+                </div>
+            </div>
+
+            <div id="settings" class="page">
+                <div class="page-header">
+                    <h1>System Settings</h1>
+                </div>
+                <div class="coming-soon">
+                    <i class="fas fa-cog"></i>
+                    <h2>System Configuration</h2>
+                    <p>Coming Soon - Configure system settings and preferences</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/main.js"></script>
+    <script src="js/animations.js"></script>
+</body>
+</html>

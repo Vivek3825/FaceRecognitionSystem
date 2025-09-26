@@ -14,7 +14,7 @@ import os
 # Add src directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from multi_camera_gui import MultiCameraGUI
+from multi_camera_gui import MultiCameraGUI  #type: ignore
 
 def main():
     """Main entry point"""

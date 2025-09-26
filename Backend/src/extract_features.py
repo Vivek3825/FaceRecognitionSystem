@@ -9,9 +9,9 @@ from facenet_pytorch import InceptionResnetV1
 import torch
 
 # Paths
-INFO_CSV = "dataset/face_info.csv"
-CSV_OUTPUT = "dataset/embeddings/embeddings.csv"
-NPZ_OUTPUT = "dataset/embeddings/all_embeddings.npz"
+INFO_CSV = "Backend/dataset/face_info.csv"
+CSV_OUTPUT = "Backend/dataset/embeddings/embeddings.csv"
+NPZ_OUTPUT = "Backend/dataset/embeddings/all_embeddings.npz"
 
 # Load FaceNet model
 model = InceptionResnetV1(pretrained='vggface2').eval()

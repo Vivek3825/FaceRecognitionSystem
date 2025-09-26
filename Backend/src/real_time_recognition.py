@@ -18,8 +18,8 @@ mtcnn = MTCNN(
 model = InceptionResnetV1(pretrained='vggface2').eval().to(DEVICE)
 
 # Load metadata
-csv_path = "dataset/embeddings/embeddings.csv"
-npz_path = "dataset/embeddings/all_embeddings.npz"
+csv_path = "Backend/dataset/embeddings/embeddings.csv"
+npz_path = "Backend/dataset/embeddings/all_embeddings.npz"
 
 # Load name map using Embedding Key
 name_map = {}  # key → name

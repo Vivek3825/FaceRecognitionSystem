@@ -14,9 +14,9 @@ mtcnn = MTCNN(
 )
 
 # Paths
-original_csv = "dataset/info.csv"
-face_output_folder = "dataset/faces"
-new_csv = "dataset/face_info.csv"
+original_csv = "Backend/dataset/info.csv"
+face_output_folder = "Backend/dataset/faces"
+new_csv = "Backend/dataset/face_info.csv"
 
 os.makedirs(face_output_folder, exist_ok=True)
 
