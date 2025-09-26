@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AeroSecure - Airport Security System</title>
-    <link rel="stylesheet" href="styles/main.css">
-    <link rel="stylesheet" href="styles/animations.css">
+    <link rel="stylesheet" href="/frontend/styles/main.css">
+    <link rel="stylesheet" href="/frontend/styles/animations.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
@@ -490,131 +490,140 @@
                 <div class="page-header">
                     <h1>Add New Person</h1>
                     <div class="page-actions">
-                        <button class="btn-secondary">
-                            <i class="fas fa-save"></i>
-                            Save Draft
+                        <button class="btn-secondary" id="refresh-cameras">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh Cameras
                         </button>
                     </div>
                 </div>
 
                 <div class="add-person-container">
-                    <form class="person-form">
-                        <div class="form-sections">
-                            <div class="form-section">
-                                <h3>Personal Information</h3>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label>First Name</label>
-                                        <input type="text" class="form-input" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Last Name</label>
-                                        <input type="text" class="form-input" required>
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label>Employee/Visitor ID</label>
-                                        <input type="text" class="form-input" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Date of Birth</label>
-                                        <input type="date" class="form-input">
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label>Email</label>
-                                        <input type="email" class="form-input">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Phone</label>
-                                        <input type="tel" class="form-input">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="form-section">
-                                <h3>Access & Security</h3>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label>Access Level</label>
-                                        <select class="form-select" required>
-                                            <option value="">Select Access Level</option>
-                                            <option value="public">Public - General Areas</option>
-                                            <option value="staff">Staff - Employee Areas</option>
-                                            <option value="security">Security - Restricted Areas</option>
-                                            <option value="vip">VIP - All Areas</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Department</label>
-                                        <input type="text" class="form-input">
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label>Valid From</label>
-                                        <input type="date" class="form-input" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Valid Until</label>
-                                        <input type="date" class="form-input" required>
-                                    </div>
-                                </div>
+                    <form class="person-form" id="person-registration-form">
+                        <!-- Personal Information Section -->
+                        <div class="form-section">
+                            <h3>Personal Information</h3>
+                            <div class="form-row">
                                 <div class="form-group">
-                                    <label>Special Notes</label>
-                                    <textarea class="form-textarea" rows="3" placeholder="Any special security notes or instructions..."></textarea>
+                                    <label for="person-name">Full Name *</label>
+                                    <input type="text" id="person-name" class="form-input" required placeholder="Enter full name">
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Camera Selection Section -->
+                        <div class="form-section">
+                            <h3>Camera Selection</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="camera-select">Select Camera *</label>
+                                    <select id="camera-select" class="form-select" required>
+                                        <option value="">Loading cameras...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <button type="button" class="btn-secondary" id="test-camera">
+                                        <i class="fas fa-eye"></i>
+                                        Test Camera
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="camera-test-result" id="camera-test-result"></div>
+                        </div>
+
+                        <!-- Photo Capture Section -->
                         <div class="photo-section">
-                            <h3>Photo Capture</h3>
-                            <div class="photo-capture-area">
-                                <div class="capture-preview">
-                                    <div class="camera-view">
-                                        <i class="fas fa-camera"></i>
-                                        <p>Click to activate camera</p>
-                                    </div>
+                            <h3>Photo Capture - Three Angles Required</h3>
+                            
+                            <!-- Camera Preview -->
+                            <div class="camera-preview-section">
+                                <div class="camera-preview">
+                                    <video id="camera-stream" autoplay muted playsinline></video>
+                                    <canvas id="capture-canvas" style="display: none;"></canvas>
                                     <div class="capture-guide">
-                                        <div class="guide-overlay">
-                                            <div class="face-outline"></div>
+                                        <div class="face-outline"></div>
+                                        <div class="angle-instruction" id="angle-instruction">
+                                            Position your face for FRONT view
                                         </div>
                                     </div>
                                 </div>
+                                
                                 <div class="capture-controls">
-                                    <button type="button" class="btn-secondary">
+                                    <button type="button" class="btn-secondary" id="start-camera">
                                         <i class="fas fa-video"></i>
                                         Start Camera
                                     </button>
-                                    <button type="button" class="btn-primary">
+                                    <button type="button" class="btn-primary" id="capture-photo" disabled>
                                         <i class="fas fa-camera"></i>
-                                        Capture Photo
+                                        Capture <span id="current-angle">Front</span>
                                     </button>
-                                    <button type="button" class="btn-secondary">
-                                        <i class="fas fa-upload"></i>
-                                        Upload Photo
+                                    <button type="button" class="btn-secondary" id="retake-photo" disabled>
+                                        <i class="fas fa-redo"></i>
+                                        Retake
                                     </button>
                                 </div>
-                                <div class="photo-requirements">
-                                    <h4>Photo Requirements:</h4>
-                                    <ul>
-                                        <li>Face should be clearly visible</li>
-                                        <li>Good lighting conditions</li>
-                                        <li>Neutral facial expression</li>
-                                        <li>No sunglasses or hat</li>
-                                    </ul>
+                            </div>
+
+                            <!-- Captured Images Display -->
+                            <div class="captured-images">
+                                <div class="image-slot" data-angle="front">
+                                    <div class="image-placeholder">
+                                        <i class="fas fa-user"></i>
+                                        <span>Front View</span>
+                                        <div class="status-indicator" id="front-status">Pending</div>
+                                    </div>
+                                    <img id="front-image" style="display: none;" />
                                 </div>
+                                
+                                <div class="image-slot" data-angle="left">
+                                    <div class="image-placeholder">
+                                        <i class="fas fa-user"></i>
+                                        <span>Left View</span>
+                                        <div class="status-indicator" id="left-status">Pending</div>
+                                    </div>
+                                    <img id="left-image" style="display: none;" />
+                                </div>
+                                
+                                <div class="image-slot" data-angle="right">
+                                    <div class="image-placeholder">
+                                        <i class="fas fa-user"></i>
+                                        <span>Right View</span>
+                                        <div class="status-indicator" id="right-status">Pending</div>
+                                    </div>
+                                    <img id="right-image" style="display: none;" />
+                                </div>
+                            </div>
+
+                            <div class="photo-requirements">
+                                <h4>Photo Requirements:</h4>
+                                <ul>
+                                    <li>✓ All three angles required (Front, Left, Right)</li>
+                                    <li>✓ Face should be clearly visible and centered</li>
+                                    <li>✓ Good lighting conditions</li>
+                                    <li>✓ Neutral facial expression</li>
+                                    <li>✓ No sunglasses, hat, or face covering</li>
+                                    <li>✓ Look straight at camera for each angle</li>
+                                </ul>
                             </div>
                         </div>
 
+                        <!-- Form Actions -->
                         <div class="form-actions">
-                            <button type="button" class="btn-secondary">Cancel</button>
-                            <button type="submit" class="btn-primary">
-                                <i class="fas fa-user-plus"></i>
-                                Add Person to Database
+                            <button type="button" class="btn-secondary" id="cancel-registration">
+                                <i class="fas fa-times"></i>
+                                Cancel
                             </button>
+                            <button type="submit" class="btn-primary" id="register-person" disabled>
+                                <i class="fas fa-user-plus"></i>
+                                Register Person
+                            </button>
+                        </div>
+
+                        <!-- Progress Indicator -->
+                        <div class="registration-progress" id="registration-progress" style="display: none;">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progress-fill"></div>
+                            </div>
+                            <div class="progress-text" id="progress-text">Preparing registration...</div>
                         </div>
                     </form>
                 </div>
@@ -674,7 +683,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/main.js"></script>
-    <script src="js/animations.js"></script>
+    <script src="/frontend/js/main.js"></script>
+    <script src="/frontend/js/animations.js"></script>
 </body>
 </html>

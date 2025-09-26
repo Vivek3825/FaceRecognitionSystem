@@ -1,0 +1,397 @@
+#!/usr/bin/env python3
+"""
+Flask API Server for Face Recognition System
+Handles frontend-backend communication
+"""
+
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
+import os
+import sys
+import json
+import base64
+import cv2
+import numpy as np
+from datetime import datetime
+
+# Add src directory to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
+from src.person_registration import PersonRegistrationSystem
+from src.match_face import match_face_from_image, match_face_from_embedding
+
+app = Flask(__name__)
+CORS(app)  # Enable CORS for frontend communication
+
+# Initialize systems
+registration_system = PersonRegistrationSystem()
+
+# Routes
+
+@app.route('/')
+def index():
+    """Health check endpoint"""
+    return jsonify({
+        "status": "online",
+        "service": "Face Recognition API",
+        "timestamp": datetime.now().isoformat()
+    })
+
+@app.route('/api/cameras', methods=['GET'])
+def get_available_cameras():
+    """Get list of available cameras"""
+    try:
+        available_cameras = []
+        
+        # Check for available camera indices (0-10)
+        for i in range(10):
+            cap = cv2.VideoCapture(i)
+            if cap.isOpened():
+                ret, _ = cap.read()
+                if ret:
+                    available_cameras.append({
+                        "id": i,
+                        "name": f"Camera {i}",
+                        "status": "available"
+                    })
+                cap.release()
+        
+        # If no cameras found, add a default webcam option
+        if not available_cameras:
+            available_cameras.append({
+                "id": 0,
+                "name": "Default Webcam",
+                "status": "available"
+            })
+        
+        return jsonify({
+            "success": True,
+            "cameras": available_cameras
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Error detecting cameras: {str(e)}"
+        }), 500
+
+@app.route('/api/capture-test/<int:camera_id>', methods=['GET'])
+def test_camera_capture(camera_id):
+    """Test camera capture"""
+    try:
+        cap = cv2.VideoCapture(camera_id)
+        if not cap.isOpened():
+            return jsonify({
+                "success": False,
+                "error": f"Cannot open camera {camera_id}"
+            }), 400
+        
+        ret, frame = cap.read()
+        cap.release()
+        
+        if not ret:
+            return jsonify({
+                "success": False,
+                "error": "Failed to capture frame"
+            }), 400
+        
+        # Encode frame as base64
+        _, buffer = cv2.imencode('.jpg', frame)
+        img_base64 = base64.b64encode(buffer).decode('utf-8')
+        
+        return jsonify({
+            "success": True,
+            "image": f"data:image/jpeg;base64,{img_base64}",
+            "message": f"Camera {camera_id} is working"
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Camera test failed: {str(e)}"
+        }), 500
+
+@app.route('/api/register-person', methods=['POST'])
+def register_person():
+    """Register a new person with face images"""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data or 'name' not in data or 'images' not in data:
+            return jsonify({
+                "success": False,
+                "error": "Missing required fields: name and images"
+            }), 400
+        
+        person_name = data['name'].strip()
+        images_data = data['images']
+        
+        # Validate person name
+        if not person_name:
+            return jsonify({
+                "success": False,
+                "error": "Person name cannot be empty"
+            }), 400
+        
+        # Validate images
+        required_angles = ['front', 'left', 'right']
+        for angle in required_angles:
+            if angle not in images_data:
+                return jsonify({
+                    "success": False,
+                    "error": f"Missing {angle} image"
+                }), 400
+        
+        # Process images - convert base64 to image files
+        processed_images = {}
+        for angle in required_angles:
+            try:
+                # Decode base64 image
+                image_data = images_data[angle]
+                if isinstance(image_data, str) and image_data.startswith('data:image'):
+                    # Remove data URL prefix
+                    image_data = image_data.split(',')[1]
+                
+                image_bytes = base64.b64decode(image_data)
+                
+                # Convert to OpenCV format
+                nparr = np.frombuffer(image_bytes, np.uint8)
+                img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                
+                if img is None:
+                    return jsonify({
+                        "success": False,
+                        "error": f"Invalid {angle} image data"
+                    }), 400
+                
+                processed_images[angle] = img
+                
+            except Exception as e:
+                return jsonify({
+                    "success": False,
+                    "error": f"Error processing {angle} image: {str(e)}"
+                }), 400
+        
+        # Register the person
+        result = registration_system.register_person(person_name, images_data)
+        
+        if result["success"]:
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Registration failed: {str(e)}"
+        }), 500
+
+@app.route('/api/search-person', methods=['POST'])
+def search_person():
+    """Search for a person using face image"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'image' not in data:
+            return jsonify({
+                "success": False,
+                "error": "Missing image data"
+            }), 400
+        
+        # Process image
+        image_data = data['image']
+        if isinstance(image_data, str) and image_data.startswith('data:image'):
+            image_data = image_data.split(',')[1]
+        
+        # Save temporary image for processing
+        image_bytes = base64.b64decode(image_data)
+        temp_path = "/tmp/search_image.jpg"
+        
+        with open(temp_path, 'wb') as f:
+            f.write(image_bytes)
+        
+        # Search using match_face
+        result = match_face_from_image(temp_path)
+        
+        # Clean up temporary file
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Search failed: {str(e)}"
+        }), 500
+
+@app.route('/api/get-person-stats', methods=['GET'])
+def get_person_stats():
+    """Get statistics about registered persons"""
+    try:
+        stats = {
+            "total_persons": 0,
+            "total_images": 0,
+            "total_faces": 0,
+            "total_embeddings": 0
+        }
+        
+        # Count from info.csv
+        if os.path.exists(registration_system.info_csv):
+            with open(registration_system.info_csv, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                stats["total_images"] = max(0, len(lines) - 1)  # Subtract header
+                # Count unique persons
+                person_ids = set()
+                for line in lines[1:]:  # Skip header
+                    parts = line.strip().split(',')
+                    if len(parts) >= 3:
+                        person_ids.add(parts[2])  # ID column
+                stats["total_persons"] = len(person_ids)
+        
+        # Count from face_info.csv
+        if os.path.exists(registration_system.face_info_csv):
+            with open(registration_system.face_info_csv, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                stats["total_faces"] = max(0, len(lines) - 1)
+        
+        # Count from embeddings.csv
+        if os.path.exists(registration_system.embeddings_csv):
+            with open(registration_system.embeddings_csv, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                stats["total_embeddings"] = max(0, len(lines) - 1)
+        
+        return jsonify({
+            "success": True,
+            "stats": stats
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Error getting stats: {str(e)}"
+        }), 500
+
+@app.route('/api/get-recent-persons', methods=['GET'])
+def get_recent_persons():
+    """Get list of recently registered persons"""
+    try:
+        persons = []
+        
+        if os.path.exists(registration_system.info_csv):
+            with open(registration_system.info_csv, 'r', encoding='utf-8') as f:
+                import csv
+                reader = csv.DictReader(f)
+                person_data = {}
+                
+                for row in reader:
+                    person_id = row['ID']
+                    if person_id not in person_data:
+                        person_data[person_id] = {
+                            "id": person_id,
+                            "name": row['Name'],
+                            "images": []
+                        }
+                    
+                    person_data[person_id]["images"].append({
+                        "path": row['Image Path'],
+                        "angle": os.path.basename(row['Image Path']).split('_')[1].split('.')[0]
+                    })
+                
+                # Get last 10 persons
+                persons = list(person_data.values())[-10:]
+        
+        return jsonify({
+            "success": True,
+            "persons": persons
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"Error getting recent persons: {str(e)}"
+        }), 500
+
+# Static file serving for images
+@app.route('/dataset/<path:filename>')
+def serve_dataset_file(filename):
+    """Serve dataset files (images, faces, etc.)"""
+    dataset_path = os.path.join(os.path.dirname(__file__), 'dataset')
+    return send_from_directory(dataset_path, filename)
+
+@app.route('/api/rebuild-embeddings', methods=['POST'])
+def rebuild_embeddings():
+    """Rebuild embeddings.npz from existing face files (recovery endpoint)"""
+    try:
+        registration_system = PersonRegistrationSystem()
+        result = registration_system.rebuild_embeddings_from_csv()
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'message': result['message'],
+                'embeddings_count': result.get('embeddings_count', 0)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result['error']
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Failed to rebuild embeddings: {str(e)}'
+        }), 500
+
+@app.route('/api/verify-consistency', methods=['GET'])
+def verify_data_consistency():
+    """Check data consistency across all files"""
+    try:
+        registration_system = PersonRegistrationSystem()
+        report = registration_system.verify_data_consistency()
+        
+        return jsonify({
+            'success': True,
+            'consistent': report['consistent'],
+            'counts': report['counts'],
+            'issues': report.get('issues', [])
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Failed to verify consistency: {str(e)}'
+        }), 500
+
+# Serve frontend files
+@app.route('/frontend')
+def serve_frontend():
+    """Serve the main frontend HTML file"""
+    frontend_path = os.path.join(os.path.dirname(__file__), '..', 'Frontend')
+    return send_from_directory(frontend_path, 'index.html')
+
+@app.route('/frontend/<path:filename>')
+def serve_frontend_static(filename):
+    """Serve frontend static files (CSS, JS, etc.)"""
+    frontend_path = os.path.join(os.path.dirname(__file__), '..', 'Frontend')
+    return send_from_directory(frontend_path, filename)
+
+if __name__ == '__main__':
+    print("🚀 Starting Face Recognition API Server...")
+    print("📡 Server will be available at: http://localhost:5000")
+    print("🔧 Available endpoints:")
+    print("   GET  /                     - Health check")
+    print("   GET  /api/cameras          - Get available cameras")
+    print("   GET  /api/capture-test/<id> - Test camera capture")
+    print("   POST /api/register-person  - Register new person")
+    print("   POST /api/search-person    - Search person by image")
+    print("   GET  /api/get-person-stats - Get registration statistics")
+    print("   GET  /api/get-recent-persons - Get recent persons")
+    print("   POST /api/rebuild-embeddings - Rebuild embeddings (recovery)")
+    print("   GET  /api/verify-consistency - Check data consistency")
+    print("   GET  /dataset/<path>       - Serve dataset files")
+    print("-" * 50)
+    
+    app.run(host='0.0.0.0', port=5000, debug=True)

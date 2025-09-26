@@ -13,10 +13,12 @@ mtcnn = MTCNN(
     image_size=160
 )
 
-# Paths
-original_csv = "Backend/dataset/info.csv"
-face_output_folder = "Backend/dataset/faces"
-new_csv = "Backend/dataset/face_info.csv"
+# Paths (fixed to work from Backend directory)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+backend_dir = os.path.dirname(script_dir)  # Go up from src to Backend
+original_csv = os.path.join(backend_dir, "dataset", "info.csv")
+face_output_folder = os.path.join(backend_dir, "dataset", "faces")
+new_csv = os.path.join(backend_dir, "dataset", "face_info.csv")
 
 os.makedirs(face_output_folder, exist_ok=True)
 

@@ -8,10 +8,15 @@ from tqdm import tqdm
 from facenet_pytorch import InceptionResnetV1
 import torch
 
-# Paths
-INFO_CSV = "Backend/dataset/face_info.csv"
-CSV_OUTPUT = "Backend/dataset/embeddings/embeddings.csv"
-NPZ_OUTPUT = "Backend/dataset/embeddings/all_embeddings.npz"
+# Paths (fixed to work from Backend directory)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+backend_dir = os.path.dirname(script_dir)  # Go up from src to Backend
+INFO_CSV = os.path.join(backend_dir, "dataset", "face_info.csv")
+CSV_OUTPUT = os.path.join(backend_dir, "dataset", "embeddings", "embeddings.csv")
+NPZ_OUTPUT = os.path.join(backend_dir, "dataset", "embeddings", "all_embeddings.npz")
+
+# Ensure embeddings directory exists
+os.makedirs(os.path.dirname(CSV_OUTPUT), exist_ok=True)
 
 # Load FaceNet model
 model = InceptionResnetV1(pretrained='vggface2').eval()
