@@ -4,7 +4,7 @@ import os
 import csv
 import numpy as np
 from PIL import Image
-from tqdm import tqdm
+from tqdm import tqdm  #type: ignore
 from facenet_pytorch import InceptionResnetV1
 import torch
 
