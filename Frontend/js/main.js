@@ -1300,9 +1300,21 @@ function showPage(pageId) {
     }
 }
 
+// Initialize the application when sections are loaded
+function initializeAeroSecure() {
+    if (window.sectionsLoaded || !window.sectionLoader) {
+        window.aeroSecure = new AeroSecure();
+    } else {
+        // Wait for sections to load
+        document.addEventListener('sectionsLoaded', () => {
+            window.aeroSecure = new AeroSecure();
+        });
+    }
+}
+
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    window.aeroSecure = new AeroSecure();
+    initializeAeroSecure();
 });
 
 // Export for module usage

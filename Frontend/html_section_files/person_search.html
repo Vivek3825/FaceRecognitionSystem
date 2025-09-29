@@ -1,0 +1,100 @@
+<!-- Person Search Page -->
+<div id="person-search" class="page">
+    <div class="page-header">
+        <h1>Person Search</h1>
+        <div class="page-actions">
+            <button class="btn-secondary">
+                <i class="fas fa-filter"></i>
+                Advanced Filter
+            </button>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <div class="search-panel">
+            <div class="search-section">
+                <h3>Search by Photo</h3>
+                <div class="photo-upload-area" id="photo-upload">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Drop an image here or click to upload</p>
+                    <input type="file" id="photo-input" accept="image/*" hidden>
+                </div>
+            </div>
+
+            <div class="search-section">
+                <h3>Search by Details</h3>
+                <div class="form-group">
+                    <input type="text" placeholder="Full Name" class="form-input">
+                </div>
+                <div class="form-group">
+                    <input type="text" placeholder="ID Number" class="form-input">
+                </div>
+                <div class="form-group">
+                    <select class="form-select">
+                        <option>Access Level</option>
+                        <option>Public</option>
+                        <option>Staff</option>
+                        <option>Security</option>
+                        <option>VIP</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="date" class="form-input">
+                </div>
+                <button class="btn-primary search-btn">
+                    <i class="fas fa-search"></i>
+                    Search Database
+                </button>
+            </div>
+        </div>
+
+        <div class="search-results">
+            <div class="results-header">
+                <h3>Search Results</h3>
+                <span class="results-count">Found 3 matches</span>
+            </div>
+            
+            <div class="result-item">
+                <div class="result-photo">
+                    <div class="photo-placeholder">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="match-percentage">96% Match</div>
+                </div>
+                <div class="result-info">
+                    <h4>John Anderson</h4>
+                    <p><strong>ID:</strong> EMP001234</p>
+                    <p><strong>Access Level:</strong> Staff</p>
+                    <p><strong>Department:</strong> Ground Operations</p>
+                    <p><strong>Last Seen:</strong> Terminal B - 14:30</p>
+                    <div class="result-status active">Active</div>
+                </div>
+                <div class="result-actions">
+                    <button class="btn-small btn-primary">View Details</button>
+                    <button class="btn-small btn-secondary">Track Location</button>
+                </div>
+            </div>
+
+            <div class="result-item">
+                <div class="result-photo">
+                    <div class="photo-placeholder">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="match-percentage">89% Match</div>
+                </div>
+                <div class="result-info">
+                    <h4>Sarah Mitchell</h4>
+                    <p><strong>ID:</strong> SEC005678</p>
+                    <p><strong>Access Level:</strong> Security</p>
+                    <p><strong>Department:</strong> Airport Security</p>
+                    <p><strong>Last Seen:</strong> Security Office - 13:45</p>
+                    <div class="result-status active">Active</div>
+                </div>
+                <div class="result-actions">
+                    <button class="btn-small btn-primary">View Details</button>
+                    <button class="btn-small btn-secondary">Track Location</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,152 @@
+<!-- Dashboard Page -->
+<div id="dashboard" class="page active">
+    <div class="page-header">
+        <h1>Security Dashboard</h1>
+        <div class="page-actions">
+            <button class="btn-primary">
+                <i class="fas fa-sync-alt"></i>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- Live Stats -->
+        <div class="card stats-card">
+            <h3>Live Statistics</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-number">1,247</span>
+                        <span class="stat-label">People Scanned Today</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon alert">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-number">3</span>
+                        <span class="stat-label">Active Alerts</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon">
+                        <i class="fas fa-video"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-number">24/24</span>
+                        <span class="stat-label">Cameras Online</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <span class="stat-number">98.7%</span>
+                        <span class="stat-label">Recognition Accuracy</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Alerts -->
+        <div class="card alerts-card">
+            <h3>Recent Security Alerts</h3>
+            <div class="alerts-list">
+                <div class="alert-item high">
+                    <div class="alert-icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-title">Watchlist Match Detected</div>
+                        <div class="alert-details">Terminal B, Gate 12 - 14:23</div>
+                    </div>
+                    <div class="alert-time">2 min ago</div>
+                </div>
+                <div class="alert-item medium">
+                    <div class="alert-icon">
+                        <i class="fas fa-user-times"></i>
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-title">Unauthorized Access Attempt</div>
+                        <div class="alert-details">Restricted Area A - 14:15</div>
+                    </div>
+                    <div class="alert-time">10 min ago</div>
+                </div>
+                <div class="alert-item low">
+                    <div class="alert-icon">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-title">Camera Maintenance Required</div>
+                        <div class="alert-details">Camera #15 - Departure Hall</div>
+                    </div>
+                    <div class="alert-time">1 hour ago</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Health -->
+        <div class="card system-health">
+            <h3>System Health Monitor</h3>
+            <div class="health-metrics">
+                <div class="metric">
+                    <span class="metric-label">CPU Usage</span>
+                    <div class="metric-bar">
+                        <div class="metric-fill" style="width: 65%"></div>
+                    </div>
+                    <span class="metric-value">65%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Memory</span>
+                    <div class="metric-bar">
+                        <div class="metric-fill" style="width: 42%"></div>
+                    </div>
+                    <span class="metric-value">42%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Storage</span>
+                    <div class="metric-bar">
+                        <div class="metric-fill" style="width: 78%"></div>
+                    </div>
+                    <span class="metric-value">78%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Network</span>
+                    <div class="metric-bar">
+                        <div class="metric-fill success" style="width: 95%"></div>
+                    </div>
+                    <span class="metric-value">95%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card quick-actions">
+            <h3>Quick Actions</h3>
+            <div class="action-buttons">
+                <button class="action-btn" onclick="showPage('person-search')">
+                    <i class="fas fa-search"></i>
+                    <span>Search Person</span>
+                </button>
+                <button class="action-btn" onclick="showPage('add-person')">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Add New Person</span>
+                </button>
+                <button class="action-btn" onclick="showPage('camera-monitor')">
+                    <i class="fas fa-video"></i>
+                    <span>Monitor Cameras</span>
+                </button>
+                <button class="action-btn">
+                    <i class="fas fa-bell"></i>
+                    <span>View All Alerts</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

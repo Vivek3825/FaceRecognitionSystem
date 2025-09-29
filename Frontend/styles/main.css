@@ -973,6 +973,34 @@ body {
     cursor: not-allowed;
 }
 
+/* Section Loading Styles */
+.section-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    text-align: center;
+}
+
+.section-loading .loading-content {
+    color: var(--text-secondary);
+}
+
+.section-loading .loading-spinner {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.section-loading .loading-spinner i {
+    animation: spin 2s linear infinite;
+}
+
+.section-loading p {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+}
+
 /* Animations */
 @keyframes pulse {
     0%, 100% {
@@ -993,5 +1021,14 @@ body {
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
     }
 }

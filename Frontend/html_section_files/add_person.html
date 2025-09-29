@@ -1,0 +1,155 @@
+<!-- Add Person Page -->
+<div id="add-person" class="page">
+    <div class="page-header">
+        <h1>Add New Person</h1>
+        <div class="page-actions">
+            <button class="btn-secondary" id="refresh-cameras">
+                <i class="fas fa-sync-alt"></i>
+                Refresh Cameras
+            </button>
+        </div>
+    </div>
+
+    <div class="add-person-container">
+        <form class="person-form" id="person-registration-form">
+            <!-- Personal Information Section -->
+            <div class="form-section">
+                <h3>Personal Information</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="person-name">Full Name *</label>
+                        <input type="text" id="person-name" class="form-input" required placeholder="Enter full name">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera Selection Section -->
+            <div class="form-section">
+                <h3>Camera Selection</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="camera-select">Select Camera *</label>
+                        <select id="camera-select" class="form-select" required>
+                            <option value="">Loading cameras...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="btn-secondary" id="test-camera">
+                            <i class="fas fa-eye"></i>
+                            Test Camera
+                        </button>
+                    </div>
+                </div>
+                <div class="camera-test-result" id="camera-test-result"></div>
+            </div>
+
+            <!-- Photo Capture Section -->
+            <div class="photo-section">
+                <h3>Photo Capture - Three Angles Required</h3>
+                
+                <!-- Camera Preview -->
+                <div class="camera-preview-section">
+                    <div class="camera-preview">
+                        <video id="camera-stream" autoplay muted playsinline></video>
+                        <canvas id="capture-canvas" style="display: none;"></canvas>
+                        <div class="capture-guide">
+                            <div class="face-outline"></div>
+                            <div class="angle-instruction" id="angle-instruction">
+                                Position your face for FRONT view
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="capture-controls">
+                        <button type="button" class="btn-secondary" id="start-camera">
+                            <i class="fas fa-video"></i>
+                            Start Camera
+                        </button>
+                        <button type="button" class="btn-primary" id="capture-photo" disabled>
+                            <i class="fas fa-camera"></i>
+                            Capture <span id="current-angle">Front</span>
+                        </button>
+                        <button type="button" class="btn-secondary" id="retake-photo" disabled>
+                            <i class="fas fa-redo"></i>
+                            Retake
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Captured Images Display -->
+                <div class="captured-images">
+                    <div class="image-slot" data-angle="front">
+                        <div class="image-placeholder">
+                            <i class="fas fa-user"></i>
+                            <span>Front View</span>
+                            <div class="status-indicator" id="front-status">Pending</div>
+                        </div>
+                        <img id="front-image" style="display: none;" />
+                        <button class="retake-angle-btn" id="retake-front" data-angle="front" style="display: none;">
+                            <i class="fas fa-redo"></i>
+                            Retake
+                        </button>
+                    </div>
+                    
+                    <div class="image-slot" data-angle="left">
+                        <div class="image-placeholder">
+                            <i class="fas fa-user"></i>
+                            <span>Left View</span>
+                            <div class="status-indicator" id="left-status">Pending</div>
+                        </div>
+                        <img id="left-image" style="display: none;" />
+                        <button class="retake-angle-btn" id="retake-left" data-angle="left" style="display: none;">
+                            <i class="fas fa-redo"></i>
+                            Retake
+                        </button>
+                    </div>
+                    
+                    <div class="image-slot" data-angle="right">
+                        <div class="image-placeholder">
+                            <i class="fas fa-user"></i>
+                            <span>Right View</span>
+                            <div class="status-indicator" id="right-status">Pending</div>
+                        </div>
+                        <img id="right-image" style="display: none;" />
+                        <button class="retake-angle-btn" id="retake-right" data-angle="right" style="display: none;">
+                            <i class="fas fa-redo"></i>
+                            Retake
+                        </button>
+                    </div>
+                </div>
+
+                <div class="photo-requirements">
+                    <h4>Photo Requirements:</h4>
+                    <ul>
+                        <li>✓ All three angles required (Front, Left, Right)</li>
+                        <li>✓ Face should be clearly visible and centered</li>
+                        <li>✓ Good lighting conditions</li>
+                        <li>✓ Neutral facial expression</li>
+                        <li>✓ No sunglasses, hat, or face covering</li>
+                        <li>✓ Look straight at camera for each angle</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" id="cancel-registration">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button type="submit" class="btn-primary" id="register-person" disabled>
+                    <i class="fas fa-user-plus"></i>
+                    Register Person
+                </button>
+            </div>
+
+            <!-- Progress Indicator -->
+            <div class="registration-progress" id="registration-progress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">Preparing registration...</div>
+            </div>
+        </form>
+    </div>
+</div>
