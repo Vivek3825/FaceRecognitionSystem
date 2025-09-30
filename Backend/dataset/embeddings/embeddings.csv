@@ -47,3 +47,6 @@ Sr No.,Name,ID,Image Path,Embedding Key
 46,Shubham Sarate,P016,/home/bablu/Bablu/Works/Projects/FaceRecognitionSystem/Backend/dataset/faces/P016_p16_front.jpg,P016_p16_front
 47,Shubham Sarate,P016,/home/bablu/Bablu/Works/Projects/FaceRecognitionSystem/Backend/dataset/faces/P016_p16_left.jpg,P016_p16_left
 48,Shubham Sarate,P016,/home/bablu/Bablu/Works/Projects/FaceRecognitionSystem/Backend/dataset/faces/P016_p16_right.jpg,P016_p16_right
+49,Pratik Mahadik,P017,/home/bablu/Bablu/Works/Projects/FaceRecognitionSystem/Backend/dataset/faces/P017_p17_front.jpg,P017_p17_front
+50,Pratik Mahadik,P017,/home/bablu/Bablu/Works/Projects/FaceRecognitionSystem/Backend/dataset/faces/P017_p17_left.jpg,P017_p17_left
+51,Pratik Mahadik,P017,/home/bablu/Bablu/Works/Projects/FaceRecognitionSystem/Backend/dataset/faces/P017_p17_right.jpg,P017_p17_right
