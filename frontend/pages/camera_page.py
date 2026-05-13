@@ -9,10 +9,13 @@ from PySide6.QtWidgets import (
     QSpinBox, QDialog, QApplication, QScrollArea
 )
 from PySide6.QtCore import Qt, Signal, QTimer
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QImage, QPixmap
 from frontend.widgets import CameraCard, BaseCard, AlertWidget
 
 from backend.src.multi_camera_manager import MultiCameraManager
+
+LARGE_FEED_W = 800
+LARGE_FEED_H = 420
 
 class CameraMonitorPage(QWidget):
     """Multi-camera live monitoring page"""
@@ -132,7 +135,8 @@ class CameraMonitorPage(QWidget):
         self.large_feed_label.setAlignment(Qt.AlignCenter)
         self.large_feed_label.setFont(QFont("Arial", 14))
         self.large_feed_label.setStyleSheet("color: #666666;")
-        self.large_feed_label.setMinimumHeight(300)
+        self.large_feed_label.setFixedSize(LARGE_FEED_W, LARGE_FEED_H)
+        #self.large_feed_label.setMinimumHeight(300)
         large_feed_layout.addWidget(self.large_feed_label)
         large_feed.setLayout(large_feed_layout)
         right_layout.addWidget(large_feed)
@@ -241,18 +245,26 @@ class CameraMonitorPage(QWidget):
 
     # NEW: shows selected camera in the large right-panel feed
     def _update_large_feed(self, frame):
-        from PySide6.QtGui import QImage, QPixmap
-        import cv2
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        target_w = LARGE_FEED_W
+        target_h = LARGE_FEED_H
+
+        frame_h, frame_w = frame.shape[:2]
+        scale = max(target_w / frame_w, target_h / frame_h)
+        scaled_w = int(frame_w * scale)
+        scaled_h = int(frame_h * scale)
+        resized = cv2.resize(frame, (scaled_w, scaled_h), interpolation=cv2.INTER_LINEAR)
+
+        x_start = max((scaled_w - target_w) // 2, 0)
+        y_start = max((scaled_h - target_h) // 2, 0)
+        cropped = resized[y_start:y_start + target_h, x_start:x_start + target_w]
+
+        if cropped.shape[1] != target_w or cropped.shape[0] != target_h:
+            cropped = cv2.resize(cropped, (target_w, target_h))
+
+        rgb = cv2.cvtColor(cropped, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb.shape
-        qimg = QImage(rgb.data, w, h, ch * w, QImage.Format_RGB888)
-        pixmap = QPixmap.fromImage(qimg).scaled(
-            self.large_feed_label.width(),
-            self.large_feed_label.height(),
-            Qt.KeepAspectRatio,
-            Qt.SmoothTransformation
-        )
-        self.large_feed_label.setPixmap(pixmap)
+        qimg = QImage(rgb.data.tobytes(), w, h, ch * w, QImage.Format_RGB888)
+        self.large_feed_label.setPixmap(QPixmap.fromImage(qimg))
 
     # NEW: refreshes detection list from real recognition results
     def _update_detection_list(self):

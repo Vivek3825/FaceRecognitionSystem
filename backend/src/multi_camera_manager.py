@@ -193,7 +193,7 @@ class MultiCameraManager:
     def start_default_cameras(self) -> int:
         """Start cameras 0 and 1 automatically"""
         started = 0
-        for camera_id in [0]:
+        for camera_id in [0, 2]:
             if self.add_camera(camera_id):
                 started += 1
         return started
@@ -271,7 +271,7 @@ class MultiCameraManager:
         best_score = similarities[best_idx]
         
         # Return name if confidence is high enough
-        if best_score >= 0.5:
+        if best_score >= 0.75:
             return self.known_names[best_idx], best_score
         else:
             return "Unknown", best_score
@@ -289,7 +289,7 @@ class MultiCameraManager:
             for result in results:
                 if (current_time - result['timestamp'] <= time_window and 
                     result['name'].lower() == person_name.lower() and
-                    result['confidence'] >= 0.75):
+                    result['confidence'] >= 0.70):
                     if camera_name not in found_cameras:
                         found_cameras.append(camera_name)
                     break

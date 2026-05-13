@@ -10,6 +10,8 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont, QPixmap, QImage, QColor, QPainter
 import cv2
 
+FEED_W = 400
+FEED_H = 225
 
 class BaseCard(QFrame):
     """Base card widget with rounded corners and shadow"""
@@ -78,117 +80,89 @@ class CameraCard(BaseCard):
 
     def __init__(self, camera_name="Camera 1", status="Active", parent=None):
         super().__init__(parent)
-        self.setMinimumSize(300, 250)
         self.camera_name = camera_name
         self.status = status
+        
+        # Setup constraints
+        self.setFixedSize(FEED_W + 20, FEED_H + 60) # Reduced height since info is hidden
+        self.setMinimumSize(300, 200)
 
-        layout = QVBoxLayout()
+        # Main Layout
+        layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # ── Feed frame ──────────────────────────────────────────────
+        # ── Feed Section ───────────────────────────────────────────
         feed_frame = QFrame()
         feed_frame.setStyleSheet("""
             QFrame {
                 background-color: #000000;
                 border: none;
-                border-radius: 4px 4px 0 0;
+                border-radius: 4px;
             }
         """)
-        feed_layout = QVBoxLayout()
+        
+        feed_layout = QVBoxLayout(feed_frame)
         feed_layout.setContentsMargins(0, 0, 0, 0)
 
-        # self.feed_label (was local variable feed_label)
-        # Now we can call self.feed_label.setPixmap() from outside
         self.feed_label = QLabel("📹 Connecting...")
         self.feed_label.setAlignment(Qt.AlignCenter)
         self.feed_label.setStyleSheet("color: #666666; font-size: 14px;")
-        self.feed_label.setMinimumHeight(150)
+        self.feed_label.setFixedSize(FEED_W, FEED_H)
+        self.feed_label.setScaledContents(False)
+        
         feed_layout.addWidget(self.feed_label)
-        feed_frame.setLayout(feed_layout)
         layout.addWidget(feed_frame)
 
-        # ── Info section ────────────────────────────────────────────
+        # ── Info Section (Elements Commented Out) ──────────────────
         info_frame = QFrame()
-        info_frame.setStyleSheet("QFrame { background-color: #141829; border: none; }")
-        info_layout = QVBoxLayout()
-        info_layout.setContentsMargins(12, 10, 12, 10)
+        info_frame.setFixedHeight(50) # Maintains the clickable area
+        info_layout = QVBoxLayout(info_frame)
+        
+        # Camera Name Label
+        self.name_label = QLabel(self.camera_name)
+        self.name_label.setStyleSheet("color: #e0e0e0;")
+        info_layout.addWidget(self.name_label)
 
-        title_layout = QHBoxLayout()
-
-        name_label = QLabel(camera_name)
-        name_label.setFont(QFont("Arial", 12, QFont.Bold))
-        name_label.setStyleSheet("color: #e0e0e0;")
-        title_layout.addWidget(name_label)
-
-        # self.status_label (was local variable status_label)
-        # So we can update Active/Inactive dynamically
+        # Status Label
         status_color = "#4caf50" if status == "Active" else "#ff4444"
         self.status_label = QLabel(f"● {status}")
-        self.status_label.setStyleSheet(f"color: {status_color}; font-size: 11px;")
-        title_layout.addWidget(self.status_label)
-        title_layout.addStretch()
-        info_layout.addLayout(title_layout)
+        self.status_label.setStyleSheet(f"color: {status_color};")
+        info_layout.addWidget(self.status_label)
 
-        metrics_layout = QHBoxLayout()
-
-        # self.fps_label (was local variable fps_label)
-        # So we can update FPS reading from timer loop
+        # FPS Label
         self.fps_label = QLabel("FPS: --")
-        self.fps_label.setStyleSheet("color: #a0a0a0; font-size: 10px;")
-        metrics_layout.addWidget(self.fps_label)
-
-        ai_label = QLabel("🤖 AI Active")
-        ai_label.setStyleSheet("color: #00bfff; font-size: 10px;")
-        metrics_layout.addWidget(ai_label)
-        metrics_layout.addStretch()
-        info_layout.addLayout(metrics_layout)
-
-        btn_layout = QHBoxLayout()
-        btn_layout.setSpacing(8)
-
-        snapshot_btn = QPushButton("📸 Snapshot")
-        snapshot_btn.setMaximumWidth(100)
-        snapshot_btn.setMinimumHeight(28)
-        snapshot_btn.setFont(QFont("Arial", 9))
-        snapshot_btn.setStyleSheet("""
-            QPushButton { background-color: #1e2844; color: #a0a0a0; border: none; border-radius: 3px; }
-            QPushButton:hover { background-color: #2a3452; }
-        """)
-        btn_layout.addWidget(snapshot_btn)
-
-        fullscreen_btn = QPushButton("⛶ Fullscreen")
-        fullscreen_btn.setMaximumWidth(100)
-        fullscreen_btn.setMinimumHeight(28)
-        fullscreen_btn.setFont(QFont("Arial", 9))
-        fullscreen_btn.setStyleSheet("""
-            QPushButton { background-color: #1e2844; color: #a0a0a0; border: none; border-radius: 3px; }
-            QPushButton:hover { background-color: #2a3452; }
-        """)
-        fullscreen_btn.clicked.connect(self.fullscreen_requested.emit)
-        btn_layout.addWidget(fullscreen_btn)
-        btn_layout.addStretch()
-
-        info_layout.addLayout(btn_layout)
-        info_frame.setLayout(info_layout)
+        info_layout.addWidget(self.fps_label)
+        
         layout.addWidget(info_frame)
 
-        self.setLayout(layout)
-
-    # converts numpy BGR frame → QPixmap → displays it
     def update_frame(self, frame):
         if frame is None:
             return
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        target_w = FEED_W    # hardcoded constants, NOT feed_label.width()
+        target_h = FEED_H
+
+        frame_h, frame_w = frame.shape[:2]
+
+        # Cover fit — fills box completely, crops centre
+        scale = max(target_w / frame_w, target_h / frame_h)
+        scaled_w = int(frame_w * scale)
+        scaled_h = int(frame_h * scale)
+
+        resized = cv2.resize(frame, (scaled_w, scaled_h), interpolation=cv2.INTER_LINEAR)
+
+        x_start = max((scaled_w - target_w) // 2, 0)
+        y_start = max((scaled_h - target_h) // 2, 0)
+        cropped = resized[y_start:y_start + target_h, x_start:x_start + target_w]
+
+        if cropped.shape[1] != target_w or cropped.shape[0] != target_h:
+            cropped = cv2.resize(cropped, (target_w, target_h))
+
+        rgb = cv2.cvtColor(cropped, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb.shape
-        qimg = QImage(rgb.data, w, h, ch * w, QImage.Format_RGB888)
-        pixmap = QPixmap.fromImage(qimg).scaled(
-            self.feed_label.width(),
-            self.feed_label.height(),
-            Qt.KeepAspectRatio,
-            Qt.SmoothTransformation
-        )
-        self.feed_label.setPixmap(pixmap)
+        qimg = QImage(rgb.data.tobytes(), w, h, ch * w, QImage.Format_RGB888)
+        self.feed_label.setPixmap(QPixmap.fromImage(qimg))
 
     # updates FPS label
     def update_fps(self, fps: float):
