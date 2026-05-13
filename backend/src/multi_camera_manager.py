@@ -289,7 +289,7 @@ class MultiCameraManager:
             for result in results:
                 if (current_time - result['timestamp'] <= time_window and 
                     result['name'].lower() == person_name.lower() and
-                    result['confidence'] >= 0.5):
+                    result['confidence'] >= 0.75):
                     if camera_name not in found_cameras:
                         found_cameras.append(camera_name)
                     break
