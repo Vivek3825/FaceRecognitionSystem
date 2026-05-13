@@ -14,7 +14,7 @@ from frontend.pages import (
     DashboardPage, CameraMonitorPage, PersonSearchPage,
     RegistrationPage, ReportsPage, SettingsPage
 )
-from backend.src.multi_camera_manager import MultiCameraManager
+#from backend.src.multi_camera_manager import MultiCameraManager
 
 class MainWindow(QMainWindow):
     """Main application window"""
@@ -22,8 +22,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.manager = MultiCameraManager()
-        self.camera_page = CameraMonitorPage(camera_manager=self.manager)
+        # self.manager = MultiCameraManager()
+        # self.camera_page = CameraMonitorPage(camera_manager=self.manager)
         
         self.setWindowTitle("Face Recognition Surveillance System")
         self.setGeometry(100, 100, 1920, 1080)
@@ -62,7 +62,7 @@ class MainWindow(QMainWindow):
         # Create pages
         self.pages = {
             "dashboard": DashboardPage(),
-            "camera": self.camera_page,
+            "camera": CameraMonitorPage(),
             "search": PersonSearchPage(),
             "registration": RegistrationPage(),
             "reports": ReportsPage(),

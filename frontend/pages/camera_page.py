@@ -12,20 +12,21 @@ from PySide6.QtCore import Qt, Signal, QTimer
 from PySide6.QtGui import QFont
 from frontend.widgets import CameraCard, BaseCard, AlertWidget
 
+from backend.src.multi_camera_manager import MultiCameraManager
+
 class CameraMonitorPage(QWidget):
     """Multi-camera live monitoring page"""
 
     # CHANGED: accepts camera_manager from main_window
-    def __init__(self, camera_manager, parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self.manager = camera_manager       # MultiCameraManager instance
         self.camera_cards = {}              # { camera_name: CameraCard }
         self.frame_times = {}              # { camera_name: last_frame_time } for FPS
         self.selected_camera = None
 
         self.init_ui()
-        self._start_cameras()              # start real cameras
-        self._start_timer()               # start frame update loop
+        # self._start_cameras()              # start real cameras
+        # self._start_timer()               # start frame update loop
 
     def init_ui(self):
         main_layout = QHBoxLayout()
@@ -55,20 +56,35 @@ class CameraMonitorPage(QWidget):
         view_combo.setMinimumHeight(30)
         controls_layout.addWidget(view_combo)
 
-        record_btn = QPushButton("🔴 Start")
-        record_btn.setMaximumWidth(120)
-        record_btn.setMinimumHeight(30)
-        record_btn.setStyleSheet("""
-            QPushButton { background-color: #ff4444; color: white; border: none; border-radius: 4px; font-weight: bold; }
+        load_btn = QPushButton("Load")
+        load_btn.setMaximumWidth(120)
+        load_btn.setMinimumHeight(30)
+        load_btn.setStyleSheet("""
+            QPushButton { background-color: #007BFF; color: white; border: none; border-radius: 4px; font-weight: bold; }
             QPushButton:hover { background-color: #ff5555; }
         """)
-        record_btn.clicked.connect(self.start_button)
-        controls_layout.addWidget(record_btn)
+        load_btn.clicked.connect(self._load_button)
+        controls_layout.addWidget(load_btn)
+        
+        start_btn = QPushButton("Start")
+        start_btn.setMaximumWidth(120)
+        start_btn.setMinimumHeight(30)
+        start_btn.setStyleSheet("""
+            QPushButton { background-color: #00C853; color: white; border: none; border-radius: 4px; font-weight: bold; }
+            QPushButton:hover { background-color: #ff5555; }
+        """)
+        start_btn.clicked.connect(self._start_button)
+        controls_layout.addWidget(start_btn)
 
-        snapshot_btn = QPushButton("📸 Snapshot All")
-        snapshot_btn.setMaximumWidth(140)
-        snapshot_btn.setMinimumHeight(30)
-        controls_layout.addWidget(snapshot_btn)
+        stop_btn = QPushButton("Stop")
+        stop_btn.setMaximumWidth(120)
+        stop_btn.setMinimumHeight(30)
+        stop_btn.setStyleSheet("""
+            QPushButton { background-color: #D32F2F; color: white; border: none; border-radius: 4px; font-weight: bold; }
+            QPushButton:hover { background-color: #ff5555; }
+        """)
+        stop_btn.clicked.connect(self._stop_button)
+        controls_layout.addWidget(stop_btn)
 
         controls_layout.addStretch()
         left_layout.addLayout(controls_layout)
@@ -148,8 +164,15 @@ class CameraMonitorPage(QWidget):
 
         self.setLayout(main_layout)
 
-    def start_button(self):
-        print('I am start button')
+    def _load_button(self):
+        self.manager = MultiCameraManager()  # MultiCameraManager instance
+
+    def _start_button(self):
+        self._start_cameras()              # start real cameras
+        self._start_timer()               # start frame update loop
+
+    def _stop_button(self):
+        self.manager.cleanup()
 
     # NEW: creates real CameraCards from MultiCameraManager cameras
     def _start_cameras(self):
