@@ -127,7 +127,7 @@ class CameraMonitorPage(QWidget):
         large_feed_layout = QVBoxLayout()
         large_feed_layout.setContentsMargins(0, 0, 0, 0)
 
-        # ✅ CHANGED: self.large_feed_label so we can update it
+        # self.large_feed_label so we can update it
         self.large_feed_label = QLabel("Select a camera to view")
         self.large_feed_label.setAlignment(Qt.AlignCenter)
         self.large_feed_label.setFont(QFont("Arial", 14))
