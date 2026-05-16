@@ -4,7 +4,7 @@ Reusable card widgets for displaying information
 
 from PySide6.QtWidgets import (
     QFrame, QVBoxLayout, QHBoxLayout, QLabel,
-    QPushButton, QGridLayout
+    QPushButton, QGridLayout, QSizePolicy
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont, QPixmap, QImage, QColor, QPainter
@@ -84,8 +84,10 @@ class CameraCard(BaseCard):
         self.status = status
         
         # Setup constraints
-        self.setFixedSize(FEED_W + 20, FEED_H + 60) # Reduced height since info is hidden
-        self.setMinimumSize(300, 200)
+        #self.setFixedSize(FEED_W + 20, FEED_H + 60) # Reduced height since info is hidden
+        self.setMinimumSize(150, 100)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
 
         # Main Layout
         layout = QVBoxLayout(self)
@@ -108,40 +110,33 @@ class CameraCard(BaseCard):
         self.feed_label = QLabel("📹 Connecting...")
         self.feed_label.setAlignment(Qt.AlignCenter)
         self.feed_label.setStyleSheet("color: #666666; font-size: 14px;")
-        self.feed_label.setFixedSize(FEED_W, FEED_H)
+        #self.feed_label.setFixedSize(FEED_W, FEED_H)
         self.feed_label.setScaledContents(False)
+        self.feed_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         
         feed_layout.addWidget(self.feed_label)
         layout.addWidget(feed_frame)
 
-        # ── Info Section (Elements Commented Out) ──────────────────
-        info_frame = QFrame()
-        info_frame.setFixedHeight(50) # Maintains the clickable area
-        info_layout = QVBoxLayout(info_frame)
-        
-        # Camera Name Label
+        # ── Info Section (HIDDEN BUT INITIALIZED) ──────────────────
         self.name_label = QLabel(self.camera_name)
-        self.name_label.setStyleSheet("color: #e0e0e0;")
-        info_layout.addWidget(self.name_label)
-
-        # Status Label
-        status_color = "#4caf50" if status == "Active" else "#ff4444"
-        self.status_label = QLabel(f"● {status}")
-        self.status_label.setStyleSheet(f"color: {status_color};")
-        info_layout.addWidget(self.status_label)
-
-        # FPS Label
-        self.fps_label = QLabel("FPS: --")
-        info_layout.addWidget(self.fps_label)
+        self.name_label.hide() 
         
-        layout.addWidget(info_frame)
+        self.status_label = QLabel(status)
+        self.status_label.hide() 
+        
+        self.fps_label = QLabel("FPS: --")
+        self.fps_label.hide() 
 
     def update_frame(self, frame):
         if frame is None:
             return
 
-        target_w = FEED_W    # hardcoded constants, NOT feed_label.width()
-        target_h = FEED_H
+        target_w = self.feed_label.width()   # hardcoded constants, NOT feed_label.width()
+        target_h = self.feed_label.height()
+
+        if target_w <= 0 or target_h <= 0:
+            return
+
 
         frame_h, frame_w = frame.shape[:2]
 

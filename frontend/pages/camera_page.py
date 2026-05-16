@@ -6,7 +6,7 @@ import cv2
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QPushButton, QFrame, QComboBox, QSlider,
-    QSpinBox, QDialog, QApplication, QScrollArea
+    QSpinBox, QDialog, QApplication, QScrollArea, QPlainTextEdit
 )
 from PySide6.QtCore import Qt, Signal, QTimer
 from PySide6.QtGui import QFont, QImage, QPixmap
@@ -28,8 +28,10 @@ class CameraMonitorPage(QWidget):
         self.selected_camera = None
 
         self.init_ui()
-        # self._start_cameras()              # start real cameras
-        # self._start_timer()               # start frame update loop
+        # NEW: Listen for the global app quit signal
+        app = QApplication.instance()
+        if app:
+            app.aboutToQuit.connect(self._safe_cleanup)
 
     def init_ui(self):
         main_layout = QHBoxLayout()
@@ -53,11 +55,12 @@ class CameraMonitorPage(QWidget):
         view_label.setStyleSheet("color: #a0a0a0;")
         controls_layout.addWidget(view_label)
 
-        view_combo = QComboBox()
-        view_combo.addItems(["2x2 Grid", "1x4 Grid", "2x3 Grid"])
-        view_combo.setMaximumWidth(150)
-        view_combo.setMinimumHeight(30)
-        controls_layout.addWidget(view_combo)
+        self.view_combo = QComboBox()
+        self.view_combo.addItems(["2x2 Grid", "1x4 Grid", "2x3 Grid"])
+        self.view_combo.setMaximumWidth(150)
+        self.view_combo.setMinimumHeight(30)
+        self.view_combo.currentTextChanged.connect(self._change_grid_layout) #()
+        controls_layout.addWidget(self.view_combo)
 
         load_btn = QPushButton("Load")
         load_btn.setMaximumWidth(120)
@@ -70,6 +73,7 @@ class CameraMonitorPage(QWidget):
         controls_layout.addWidget(load_btn)
         
         start_btn = QPushButton("Start")
+        # start_btn.setToolTip("Make sure to click 'Load' before starting!")
         start_btn.setMaximumWidth(120)
         start_btn.setMinimumHeight(30)
         start_btn.setStyleSheet("""
@@ -80,6 +84,7 @@ class CameraMonitorPage(QWidget):
         controls_layout.addWidget(start_btn)
 
         stop_btn = QPushButton("Stop")
+        # stop_btn.setToolTip("Make sure you have stared cameras")
         stop_btn.setMaximumWidth(120)
         stop_btn.setMinimumHeight(30)
         stop_btn.setStyleSheet("""
@@ -92,11 +97,25 @@ class CameraMonitorPage(QWidget):
         controls_layout.addStretch()
         left_layout.addLayout(controls_layout)
 
-        # CHANGED: self.camera_grid (was local variable)
-        # We add cards to it later in _start_cameras()
-        self.camera_grid = QGridLayout()
-        self.camera_grid.setSpacing(15)
-        left_layout.addLayout(self.camera_grid)
+
+        # ── WARNING LABEL ──
+        self.warning_label = QLabel("")  # Start with empty text
+        self.warning_label.setStyleSheet("color: #ff5555; font-weight: bold;") # Style it Red
+        self.warning_label.hide() # Hide it so the user doesn't see it yet
+        left_layout.addWidget(self.warning_label) # Add it just under the buttons
+
+        # ── FIXED DIMENSION GRID BLOCK ───────────────────────────────
+        self.grid_container = QFrame()
+        self.grid_container.setFixedSize(LARGE_FEED_W, LARGE_FEED_H)
+        self.grid_container.setStyleSheet("""
+            QFrame { background-color: #0b0e17; border-radius: 8px; border: 1px solid #1e2233; }
+        """)
+
+        self.camera_grid = QGridLayout(self.grid_container)
+        self.camera_grid.setContentsMargins(10,10,10,10)
+        self.camera_grid.setSpacing(10)
+
+        left_layout.addWidget(self.grid_container)
 
         # Detection list
         detection_label = QLabel("Live Detections")
@@ -104,18 +123,18 @@ class CameraMonitorPage(QWidget):
         detection_label.setStyleSheet("color: #e0e0e0;")
         left_layout.addWidget(detection_label)
 
-        # CHANGED: self.detections_layout (was local variable)
-        # We clear and repopulate it in _update_detection_list()
         self.detections_layout = QVBoxLayout()
         self.detections_layout.setSpacing(8)
         left_layout.addLayout(self.detections_layout)
-        left_layout.addStretch()
 
+        left_layout.addStretch()
         main_layout.addLayout(left_layout)
 
         # ── RIGHT SECTION ─────────────────────────────────────────────
         right_layout = QVBoxLayout()
         right_layout.setSpacing(15)
+
+        right_layout.insertSpacing(0, 72)
 
         selected_title = QLabel("Selected Camera")
         selected_title.setFont(QFont("Arial", 16, QFont.Bold))
@@ -136,35 +155,26 @@ class CameraMonitorPage(QWidget):
         self.large_feed_label.setFont(QFont("Arial", 14))
         self.large_feed_label.setStyleSheet("color: #666666;")
         self.large_feed_label.setFixedSize(LARGE_FEED_W, LARGE_FEED_H)
-        #self.large_feed_label.setMinimumHeight(300)
         large_feed_layout.addWidget(self.large_feed_label)
         large_feed.setLayout(large_feed_layout)
         right_layout.addWidget(large_feed)
 
         # Camera controls
-        controls_title = QLabel("Camera Controls")
-        controls_title.setFont(QFont("Arial", 14, QFont.Bold))
-        controls_title.setStyleSheet("color: #e0e0e0;")
-        right_layout.addWidget(controls_title)
+        camera_detail = QLabel("Camera Details.")
+        camera_detail.setFont(QFont("Arial", 16, QFont.Bold))
+        camera_detail.setStyleSheet("color: #e0e0e0;")
+        right_layout.addWidget(camera_detail)
 
-        zoom_label = QLabel("Zoom Level")
-        zoom_label.setStyleSheet("color: #a0a0a0; font-size: 11px;")
-        right_layout.addWidget(zoom_label)
-        zoom_slider = QSlider(Qt.Horizontal)
-        zoom_slider.setRange(100, 400)
-        zoom_slider.setValue(100)
-        right_layout.addWidget(zoom_slider)
+        self.camera_detail_layout = QVBoxLayout()
+        self.camera_detail_layout.setSpacing(8)
+        right_layout.addLayout(self.camera_detail_layout)
 
-        brightness_label = QLabel("Brightness")
-        brightness_label.setStyleSheet("color: #a0a0a0; font-size: 11px;")
-        right_layout.addWidget(brightness_label)
-        brightness_slider = QSlider(Qt.Horizontal)
-        brightness_slider.setRange(0, 200)
-        brightness_slider.setValue(100)
-        right_layout.addWidget(brightness_slider)
+        # camera_detais = QPlainTextEdit()
+        # self.output_log.setReadOnly(True)  # Prevents user typing, makes it a pure "display" box
 
         right_layout.addStretch()
         main_layout.addLayout(right_layout)
+
 
         self.setLayout(main_layout)
 
@@ -172,30 +182,123 @@ class CameraMonitorPage(QWidget):
         self.manager = MultiCameraManager()  # MultiCameraManager instance
 
     def _start_button(self):
-        self._start_cameras()              # start real cameras
-        self._start_timer()               # start frame update loop
+        if hasattr(self, 'manager'):
+            self.check = True
+            self._start_cameras()              # start real cameras
+            self._start_timer()               # start frame update loop
+            self._camera_details()
+        else:
+            self._show_temporary_warning("⚠️ Please click 'Load' before starting.")
 
     def _stop_button(self):
-        self.manager.cleanup()
+        if hasattr(self, 'manager'):
+            if hasattr(self, 'avl_cameras'):
+                self.manager.cleanup()
+                self._clear_camera_details()
+            else:
+                self._show_temporary_warning("⚠️ Please start the cameras first.")
+        else:
+            self._show_temporary_warning("⚠️ Please click 'Load' first.")
+
+    def _show_temporary_warning(self, message):
+        self.warning_label.setText(message)
+        self.warning_label.show()
+        
+        # Automatically hide the label after 3500 ms (3.5 seconds)
+        QTimer.singleShot(3500, self.warning_label.hide)
+
+    # ── GRID LOGIC ──────────────────────────────────────────
+    def _change_grid_layout(self, mode_str):
+        """Forces the grid layout into specific columns/rows"""
+        # 1. Parse string for target dimensions (Cols x Rows)
+        if "1x4" in mode_str:
+            cols, rows = 4, 1   # 1 Row, 4 Columns (Horizontal strip)
+        elif "2x3" in mode_str:
+            cols, rows = 3, 2   # 2 Rows, 3 Columns
+        else:
+            cols, rows = 2, 2   # 2x2 Default
+
+        # 2. Clear existing widgets from layout
+        while self.camera_grid.count():
+            item = self.camera_grid.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.hide()
+
+        # 3. Reset stretches (Clear old divisions)
+        for i in range(10): # Assume a max of 10 rows/cols safely
+            self.camera_grid.setColumnStretch(i, 0)
+            self.camera_grid.setRowStretch(i, 0)
+
+        # 4. Force rigid cell sizes using stretches
+        for c in range(cols):
+            self.camera_grid.setColumnStretch(c, 1)
+        for r in range(rows):
+            self.camera_grid.setRowStretch(r, 1)
+
+        # 5. Populate grid sequentially (0,0 -> 0,1 -> 1,0 ...)
+        available_cameras = list(self.camera_cards.values())
+        for i, card in enumerate(available_cameras):
+            row = i // cols
+            col = i % cols
+            
+            # Add to grid only if it fits inside the specified layout bounds
+            if row < rows:
+                self.camera_grid.addWidget(card, row, col)
+                card.show()
+
+    def _camera_details(self):
+        avl_camera = QLabel(f"Available cameras: {len(self.avl_cameras)}")
+        avl_camera.setFont(QFont("Arial", 14, QFont.Bold))
+        avl_camera.setStyleSheet("color: #e0e0e0;")
+        self.camera_detail_layout.addWidget(avl_camera)
+
+        for cameras in self.avl_cameras:
+            avl_camera = QLabel(f"{cameras}")
+            avl_camera.setFont(QFont("Arial", 14, QFont.Bold))
+            avl_camera.setStyleSheet("color: #e0e0e0;")
+            self.camera_detail_layout.addWidget(avl_camera)
+
+    def _clear_camera_details(self):
+            # Keep looping as long as there is at least 1 item in the layout
+            while self.camera_detail_layout.count():
+                # Take the first item out of the layout
+                item = self.camera_detail_layout.takeAt(0)
+                
+                # Check if the item is a widget
+                widget = item.widget()
+                if widget is not None:
+                    # Delete the widget properly to free up memory
+                    widget.deleteLater()
 
     # NEW: creates real CameraCards from MultiCameraManager cameras
     def _start_cameras(self):
         self.manager.start_default_cameras()
+        self.avl_cameras = []
 
         for i, camera_name in enumerate(self.manager.get_all_camera_names()):
+            self.avl_cameras.append(camera_name)
             card = CameraCard(camera_name, "Active")
             card.clicked.connect(lambda n=camera_name: self.on_camera_selected(n))
             self.camera_cards[camera_name] = card
             self.camera_grid.addWidget(card, i // 2, i % 2)  # 2-column grid
+        
+        self._change_grid_layout(self.view_combo.currentText())
 
-    # NEW: QTimer fires every 33ms (~30 FPS)
     def _start_timer(self):
-        self.timer = QTimer()
-        self.timer.timeout.connect(self._update_all)
-        self.timer.start(33)
+        # Frame timer — fast, for video
+        self.frame_timer = QTimer()
+        self.frame_timer.timeout.connect(self._update_frames_only)
+        self.frame_timer.start(33)  # 30fps
+
+        # Detection timer — slow, for the list
+        self.detection_timer = QTimer()
+        self.detection_timer.timeout.connect(self._update_detection_list)
+        self.detection_timer.start(1500)  # once per 1.5 seconds
 
     # NEW: main loop — runs 30x per second
-    def _update_all(self):
+    def _update_frames_only(self):
+        # Only frame + recognition work here, NO detection list call
         for camera_name, card in self.camera_cards.items():
             camera = self.manager.cameras.get(camera_name)
             if not camera:
@@ -205,18 +308,13 @@ class CameraMonitorPage(QWidget):
             if frame is None:
                 continue
 
-            # Run face recognition on this frame
             results = self.manager.process_frame_recognition(frame, camera_name)
             self.manager.update_recognition_results(camera_name, results)
 
-            # Draw face boxes + names on frame
             annotated = self._draw_boxes(frame, results)
-
-            # Push frame to CameraCard
             card.update_frame(annotated)
             card.update_status(camera.is_running)
 
-            # Calculate and show FPS
             now = time.time()
             last = self.frame_times.get(camera_name, now)
             elapsed = now - last
@@ -224,11 +322,8 @@ class CameraMonitorPage(QWidget):
             card.update_fps(fps)
             self.frame_times[camera_name] = now
 
-            # If this is the selected camera, update large feed too
             if camera_name == self.selected_camera:
                 self._update_large_feed(annotated)
-
-        self._update_detection_list()
 
     # NEW: draws green/red boxes around detected faces
     def _draw_boxes(self, frame, results):
@@ -274,22 +369,54 @@ class CameraMonitorPage(QWidget):
             if item.widget():
                 item.widget().deleteLater()
 
-        # Add recent detections (last 5 seconds)
+        if not hasattr(self, 'manager'):
+            return
+
         cutoff = time.time() - 5
-        shown = 0
+
+        # Step 1: Collect best result per (name, camera) pair
+        per_camera_best = {}  # key: (name, camera) → best result dict
         for camera_name, results in self.manager.recognition_results.items():
-            recent = [r for r in results if r['timestamp'] >= cutoff]
-            for r in recent[-2:]:  # max 2 per camera
-                severity = "success" if r['name'] != "Unknown" else "info"
-                alert = AlertWidget(
-                    r['name'],
-                    f"{camera_name} — {r['confidence']:.0%} confidence",
-                    severity
-                )
-                self.detections_layout.addWidget(alert)
-                shown += 1
-                if shown >= 6:  # cap total shown alerts
-                    return
+            for r in results:
+                if r['timestamp'] < cutoff:
+                    continue
+                key = (r['name'], camera_name)
+                if key not in per_camera_best or r['confidence'] > per_camera_best[key]['confidence']:
+                    per_camera_best[key] = r
+
+        # Step 2: Global merge by name — same person across cameras → one entry
+        global_persons = {}  # name → {confidence, cameras: [], timestamp}
+        for (name, camera_name), r in per_camera_best.items():
+            if name not in global_persons:
+                global_persons[name] = {
+                    'name': name,
+                    'confidence': r['confidence'],
+                    'cameras': [camera_name],
+                    'timestamp': r['timestamp']
+                }
+            else:
+                entry = global_persons[name]
+                if camera_name not in entry['cameras']:
+                    entry['cameras'].append(camera_name)
+                # Keep highest confidence across cameras
+                if r['confidence'] > entry['confidence']:
+                    entry['confidence'] = r['confidence']
+                if r['timestamp'] > entry['timestamp']:
+                    entry['timestamp'] = r['timestamp']
+
+        # Step 3: Sort by most recent, display up to 6
+        sorted_persons = sorted(global_persons.values(), 
+                            key=lambda x: x['timestamp'], reverse=True)
+
+        for entry in sorted_persons[:6]:
+            camera_str = ", ".join(entry['cameras'])  # "Camera 1, Camera 2"
+            severity = "success" if entry['name'] != "Unknown" else "info"
+            alert = AlertWidget(
+                entry['name'],
+                f"{camera_str} — {entry['confidence']:.0%} confidence",
+                severity
+            )
+            self.detections_layout.addWidget(alert)
 
     def on_camera_selected(self, camera_name):
         self.selected_camera = camera_name
@@ -315,8 +442,19 @@ class CameraMonitorPage(QWidget):
                     }
                 """)
 
-    # NEW: stop timer and cleanup when page closes
-    def closeEvent(self, event):
-        self.timer.stop()
-        self.manager.cleanup()
-        super().closeEvent(event)
+    
+    def _safe_cleanup(self):
+        """Safely stops timers and releases cameras before the app closes."""
+        # Safely stop frame timer
+        if hasattr(self, 'frame_timer') and self.frame_timer.isActive():
+            self.frame_timer.stop()
+            
+        # Safely stop detection timer
+        if hasattr(self, 'detection_timer') and self.detection_timer.isActive():
+            self.detection_timer.stop()
+            
+        # Safely cleanup cameras
+        if hasattr(self, 'manager'):
+            self.manager.cleanup()
+            
+        print("Camera resources cleanly released.")

@@ -14,7 +14,6 @@ import configparser
 import os
 from typing import Dict, List, Optional, Tuple
 
-
 class CameraStream:
     """Individual camera handler - captures frames in separate thread"""
     
@@ -193,7 +192,7 @@ class MultiCameraManager:
     def start_default_cameras(self) -> int:
         """Start cameras 0 and 1 automatically"""
         started = 0
-        for camera_id in [0, 2]:
+        for camera_id in [0]:
             if self.add_camera(camera_id):
                 started += 1
         return started
