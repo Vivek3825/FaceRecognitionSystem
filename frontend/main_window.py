@@ -15,6 +15,8 @@ from frontend.pages import (
     RegistrationPage, ReportsPage, SettingsPage
 )
 #from backend.src.multi_camera_manager import MultiCameraManager
+# from backend.src.person_registration import PersonRegistrationSystem
+
 
 class MainWindow(QMainWindow):
     """Main application window"""

@@ -1,4 +1,4 @@
-# AeroSecure - Complete Face Recognition System
+# AeroSecure - README.md is not updated yet with new aerosecure version
 
 <div align="center">
 

@@ -18,7 +18,7 @@ import io
 class PersonRegistrationSystem:
     def __init__(self, dataset_path=None):
         if dataset_path is None:
-            # Use the actual Backend/dataset path
+            # Use the actual backend/dataset path
             dataset_path = os.path.join(os.path.dirname(__file__), "..", "dataset")
         
         self.dataset_path = os.path.abspath(dataset_path)

@@ -116,11 +116,11 @@ class MultiCameraManager:
         """Load known faces from dataset"""
         try:
             # Load embeddings file
-            npz_data = np.load("dataset/embeddings/all_embeddings.npz")
+            npz_data = np.load("backend/dataset/embeddings/all_embeddings.npz")
             
             # Load names mapping
             self.name_map = {}
-            with open("dataset/embeddings/embeddings.csv", newline='', encoding='utf-8') as f:
+            with open("backend/dataset/embeddings/embeddings.csv", newline='', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     self.name_map[row["Embedding Key"]] = row["Name"]
