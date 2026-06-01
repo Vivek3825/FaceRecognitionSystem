@@ -1,6 +1,7 @@
 """
 Main application window for Face Recognition System
 """
+
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QStackedWidget, QApplication
@@ -8,12 +9,14 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont, QIcon
 from pathlib import Path
+import shutil
 
 from frontend.widgets import SidebarWidget, TopBarWidget
 from frontend.pages import (
     DashboardPage, CameraMonitorPage, PersonSearchPage,
     RegistrationPage, ReportsPage, SettingsPage
 )
+
 #from backend.src.multi_camera_manager import MultiCameraManager
 # from backend.src.person_registration import PersonRegistrationSystem
 
@@ -24,8 +27,22 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # self.manager = MultiCameraManager()
-        # self.camera_page = CameraMonitorPage(camera_manager=self.manager)
+        base_dir = Path(__file__).parent.parent
+        dataset_dir = base_dir / "backend" / "dataset"
+        zip_path = base_dir / "backend" / "dummy_dataset.zip"
+
+        # Check if dataset exists, if not, try to extract
+        if not dataset_dir.is_dir():
+            print(f"Dataset not found. Attempting to extract from {zip_path}...")
+            try:
+                if zip_path.exists():
+                    shutil.unpack_archive(str(zip_path), str(dataset_dir))
+                    print("Dataset extracted successfully!")
+                else:
+                    print(f"Warning: ZIP file not found at {zip_path}. App may not function correctly.")
+            except Exception as e:
+                print(f"Error extracting dataset: {e}")
+
         
         self.setWindowTitle("Face Recognition Surveillance System")
         self.setGeometry(100, 100, 1920, 1080)
