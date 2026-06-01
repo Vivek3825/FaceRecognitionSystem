@@ -301,7 +301,7 @@ class RegistrationPage(QWidget):
         target_angle = self.angle_order[self.current_angle_index]
         
         # Convert matrix into JPEG byte buffer arrays
-        ret, buffer = cv2.imencode('.jpg', self.current_frame)
+        ret, buffer = cv2.imencode('.jpeg', self.current_frame)
         if not ret:
             return
             
