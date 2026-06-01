@@ -457,4 +457,4 @@ class CameraMonitorPage(QWidget):
         if hasattr(self, 'manager'):
             self.manager.cleanup()
             
-        print("Camera resources cleanly released.")
+        print("✅ CameraPage cleanup complete - Camera resources cleanly released.")

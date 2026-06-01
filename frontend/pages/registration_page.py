@@ -16,6 +16,7 @@ from PySide6.QtGui import QFont, QImage, QPixmap
 
 from backend.src.person_registration import PersonRegistrationSystem
 from backend.src.multi_camera_manager import CameraStream
+#from .camera_page import CameraMonitorPage
 
 class WorkerThread(QThread):
     """Thread to run heavy ML backend operations without freezing the UI"""
@@ -52,6 +53,11 @@ class RegistrationPage(QWidget):
         self.current_angle_index = 0
         
         self.init_ui()
+        
+        # Connect app quit signal for cleanup
+        app = QApplication.instance()
+        if app:
+            app.aboutToQuit.connect(self._safe_cleanup)
     
     def init_ui(self):
         """Initialize registration UI configured to match backend specs"""
@@ -371,7 +377,12 @@ class RegistrationPage(QWidget):
         self.reset_capture_sequence()
         self.id_input.setText(self.backend.get_next_person_id())
 
-    def closeEvent(self, event):
-        """Graceful hardware cleanup overrides on interface closes"""
+    def _safe_cleanup(self):
+        """Cleanup resources when application closes"""
         self.shutdown_camera()
-        event.accept()
+        print("✅ RegistrationPage cleanup complete")
+
+    # def closeEvent(self, event):
+    #     """Graceful hardware cleanup overrides on interface closes"""
+    #     self._safe_cleanup()
+    #     event.accept()
