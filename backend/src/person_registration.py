@@ -14,17 +14,18 @@ from datetime import datetime
 import numpy as np
 from PIL import Image
 import io
+from pathlib import Path
 
 class PersonRegistrationSystem:
     def __init__(self, dataset_path=None):
         if dataset_path is None:
-            # Use the actual backend/dataset path
-            dataset_path = os.path.join(os.path.dirname(__file__), "..", "dataset")
-        
-        self.dataset_path = os.path.abspath(dataset_path)
-        self.images_path = os.path.join(self.dataset_path, "images")
-        self.faces_path = os.path.join(self.dataset_path, "faces")
-        self.embeddings_path = os.path.join(self.dataset_path, "embeddings")
+            # Resolve backend/dataset relative to this module
+            dataset_path = Path(__file__).resolve().parents[1] / "dataset"
+
+        self.dataset_path = Path(dataset_path)
+        self.images_path = self.dataset_path / "images"
+        self.faces_path = self.dataset_path / "faces"
+        self.embeddings_path = self.dataset_path / "embeddings"
         
         # CSV files
         self.info_csv = os.path.join(self.dataset_path, "info.csv")
@@ -111,7 +112,7 @@ class PersonRegistrationSystem:
     def save_images(self, person_name, person_id, images_data):
         """Save the three captured images"""
         try:
-            person_num = self.get_next_person_number()
+            person_num = self.get_next_person_id()
             saved_paths = {}
             
             angles = ['front', 'left', 'right']
@@ -120,8 +121,8 @@ class PersonRegistrationSystem:
                 if angle not in images_data:
                     return {"success": False, "error": f"Missing {angle} image"}
                 
-                filename = f"p{person_num}_{angle}.jpeg"
-                filepath = os.path.join(self.images_path, filename)
+                filename = f"{person_num}_{angle}.jpeg"
+                filepath = self.images_path / filename
                 
                 # Save image data
                 image_data = images_data[angle]
@@ -133,10 +134,10 @@ class PersonRegistrationSystem:
                     # Decode and save
                     image_bytes = base64.b64decode(image_data)
                     image = Image.open(io.BytesIO(image_bytes))
-                    image.save(filepath, 'JPEG', quality=85)
+                    image.save(str(filepath), 'JPEG', quality=85)
                 
                 # Use relative path for CSV storage (like existing data)
-                saved_paths[angle] = f"dataset/images/{filename}"
+                saved_paths[angle] = str(Path("dataset") / "images" / filename)
             
             return {
                 "success": True,
@@ -187,17 +188,19 @@ class PersonRegistrationSystem:
             for angle in ['front', 'left', 'right']:
                 img_path = image_paths[angle]
                 
-                # Convert relative path to absolute
-                if not os.path.isabs(img_path):
-                    abs_img_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), img_path)
+                # Convert relative path to absolute Path
+                img_p = Path(img_path)
+                if not img_p.is_absolute():
+                    base = Path(__file__).resolve().parents[1]
+                    abs_img_path = (base / img_p).resolve()
                 else:
-                    abs_img_path = img_path
-                
-                if not os.path.exists(abs_img_path):
+                    abs_img_path = img_p.resolve()
+
+                if not abs_img_path.exists():
                     return {"success": False, "error": f"Image not found: {abs_img_path}"}
-                
+
                 # Process image
-                pil_img = Image.open(abs_img_path).convert('RGB')
+                pil_img = Image.open(str(abs_img_path)).convert('RGB')
                 face_tensor = mtcnn(pil_img)
                 
                 if face_tensor is None:
@@ -211,9 +214,9 @@ class PersonRegistrationSystem:
                 
                 # Save face
                 base_name = os.path.splitext(os.path.basename(abs_img_path))[0]
-                save_name = f"{person_id}_{base_name}.jpg"
-                save_path = os.path.join(self.faces_path, save_name)
-                cv2.imwrite(save_path, face_bgr)
+                save_name = f"{base_name}_face.jpeg"
+                save_path = self.faces_path / save_name
+                cv2.imwrite(str(save_path), face_bgr)
                 
                 print(f"✅ Saved face: {save_name}")
                 
@@ -230,7 +233,9 @@ class PersonRegistrationSystem:
                 # Person name is passed as parameter
                 
                 # Add to face_info.csv entries
-                new_face_rows.append([sr_num, person_name, person_id, save_path])
+                # new_face_rows.append([sr_num, person_name, person_id, save_path])
+                relative_face_path = str(Path("dataset") / "faces" / save_name)
+                new_face_rows.append([sr_num, person_name, person_id, relative_face_path])
             
             # Append to face_info.csv
             file_exists = os.path.exists(self.face_info_csv)
@@ -260,7 +265,7 @@ class PersonRegistrationSystem:
             # Find new face files for this person
             face_files = []
             for face_file in os.listdir(self.faces_path):
-                if face_file.startswith(person_id) and face_file.endswith('.jpg'):
+                if face_file.startswith(person_id) and face_file.endswith('.jpeg'):
                     face_files.append(face_file)
             
             if not face_files:
@@ -280,10 +285,10 @@ class PersonRegistrationSystem:
                     sr_num = len(f.readlines())  # Include header
             
             for face_file in sorted(face_files):
-                face_path = os.path.join(self.faces_path, face_file)
-                
+                face_path = self.faces_path / face_file
+
                 # Load and process image
-                img = Image.open(face_path).convert("RGB")
+                img = Image.open(str(face_path)).convert("RGB")
                 img_tensor = torch.tensor(np.array(img)).permute(2, 0, 1).float() / 255.0
                 
                 # Resize if needed
@@ -312,7 +317,9 @@ class PersonRegistrationSystem:
                                 person_name = row['Name']
                                 break
                 
-                new_embedding_rows.append([sr_num, person_name, person_id, face_path, key])
+                #new_embedding_rows.append([sr_num, person_name, person_id, face_path, key])
+                relative_face_path = str(Path("dataset") / "faces" / face_file)
+                new_embedding_rows.append([sr_num, person_name, person_id, relative_face_path, key])
                 sr_num += 1
                 
                 print(f"✅ Extracted embedding: {key}")
@@ -430,10 +437,11 @@ class PersonRegistrationSystem:
             # Remove any files that were created
             if saved_files:
                 if 'image_paths' in saved_files:
+                    base = Path(__file__).resolve().parents[1]
                     for path in saved_files['image_paths'].values():
-                        abs_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), path)
-                        if os.path.exists(abs_path):
-                            os.remove(abs_path)
+                        abs_path = (base / Path(path)).resolve()
+                        if abs_path.exists():
+                            abs_path.unlink()
                             print(f"🗑️  Removed: {abs_path}")
             
             # Restore CSV files
@@ -476,12 +484,13 @@ class PersonRegistrationSystem:
             save_result = self.save_images(person_name, person_id, images_data)
             if not save_result["success"]:
                 return save_result
-            
+
             saved_files['image_paths'] = save_result["paths"]
-            
+
             print("📝 Updating info.csv...")
             info_result = self.update_info_csv(person_name, person_id, save_result["paths"])
             if not info_result["success"]:
+                # Rollback saved images
                 self.restore_from_backup(backups, saved_files)
                 return info_result
             

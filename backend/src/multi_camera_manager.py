@@ -11,7 +11,7 @@ from facenet_pytorch import MTCNN, InceptionResnetV1
 from sklearn.metrics.pairwise import cosine_similarity
 import csv
 import configparser
-import os
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 class CameraStream:
@@ -115,12 +115,17 @@ class MultiCameraManager:
     def _load_face_database(self):
         """Load known faces from dataset"""
         try:
+            # Resolve dataset paths relative to backend module
+            base = Path(__file__).resolve().parents[1] / 'dataset'
+            embeddings_npz = base / 'embeddings' / 'all_embeddings.npz'
+
             # Load embeddings file
-            npz_data = np.load("backend/dataset/embeddings/all_embeddings.npz")
-            
+            npz_data = np.load(embeddings_npz)
+
             # Load names mapping
             self.name_map = {}
-            with open("backend/dataset/embeddings/embeddings.csv", newline='', encoding='utf-8') as f:
+            embeddings_csv = base / 'embeddings' / 'embeddings.csv'
+            with open(embeddings_csv, newline='', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     self.name_map[row["Embedding Key"]] = row["Name"]
@@ -146,13 +151,13 @@ class MultiCameraManager:
     
     def load_camera_config(self) -> Dict[int, str]:
         """Load camera names from config file"""
-        config_file = "backend/camera_config.ini" #File Path
+        config_file = Path(__file__).resolve().parents[1] / "camera_config.ini"
         camera_mapping = {}
         
-        if os.path.exists(config_file):
+        if Path(config_file).exists():
             try:
                 config = configparser.ConfigParser()
-                config.read(config_file)
+                config.read(str(config_file))
                 
                 if 'Display Names' in config:
                     for camera_id, name in config['Display Names'].items():

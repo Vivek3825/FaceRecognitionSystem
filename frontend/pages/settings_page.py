@@ -362,7 +362,9 @@ class SettingsPage(QWidget):
         db_label.setStyleSheet("color: #a0a0a0;")
         group_layout.addWidget(db_label, 0, 0)
         
-        db_path_label = QLabel("/data/database/")
+        from pathlib import Path
+        default_db = Path(__file__).resolve().parents[2] / "data" / "database"
+        db_path_label = QLabel(str(default_db))
         db_path_label.setStyleSheet("color: #666666;")
         group_layout.addWidget(db_path_label, 0, 1)
         

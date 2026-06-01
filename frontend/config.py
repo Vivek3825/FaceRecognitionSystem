@@ -3,6 +3,7 @@ Configuration settings for the frontend application
 """
 from enum import Enum
 from dataclasses import dataclass
+from pathlib import Path
 
 
 class Theme(Enum):
@@ -35,7 +36,7 @@ class ApplicationConfig:
     
     # Theme
     DEFAULT_THEME = Theme.DARK
-    THEME_STYLESHEET_PATH = "frontend/styles/dark_theme.qss"
+    THEME_STYLESHEET_PATH = Path(__file__).parent / "styles" / "dark_theme.qss"
     
     # Language
     DEFAULT_LANGUAGE = Language.ENGLISH
