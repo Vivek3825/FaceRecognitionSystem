@@ -339,67 +339,32 @@ backend/
 
 ---
 
-### 4. **Settings Page** - System Configuration
+### 4. **Settings Page** - Camera Configuration
 
-**Purpose**: Configure startup cameras and system preferences.
+**Purpose**: Configure which cameras are active and assign friendly display names.
 
-**Layout**:
+**Two-Step Workflow**:
+
+#### Step 1: Define Active Camera IDs
+- **Input Field**: Enter comma-separated camera device IDs (e.g., `0, 1, 2`)
+- **Button**: "🔄 Update Camera List"
+- Saves the active cameras to the system
+
+#### Step 2: Assign Display Names (Optional)
+- **Table with 3 columns**:
+  - **Column 1**: Camera ID (from Step 1)
+  - **Column 2**: Current Name (from `camera_config.ini`, defaults to "Default Camera X")
+  - **Column 3**: Input field to enter new name
+- **Button**: "💾 Update/Overwrite Camera Names"
+- Saves display names to `backend/camera_config.ini` for currently active cameras only
+
+**Configuration File** (`backend/camera_config.ini`):
+```ini
+[Display Names]
+0 = Gate A - Entrance
+2 = Lobby - Main Hall
 ```
-┌────────────────────────────────────┐
-│ Settings                           │
-├────────────────────────────────────┤
-│                                    │
-│ Default Cameras                    │
-│ Enter comma-separated camera IDs:  │
-│ [_______________________________]   │
-│ Example: 0,1,2                     │
-│                                    │
-│ [Update] [Reset to Defaults]       │
-│                                    │
-│ Active Camera List                 │
-│ Current Configuration:             │
-│ ┌────────────────────────────────┐ │
-│ │ Camera 0: Gate A - Entrance    │ │
-│ │ Camera 1: Gate B - Exit        │ │
-│ │ Camera 2: Lobby - Main Hall    │ │
-│ └────────────────────────────────┘ │
-│                                    │
-│ Camera Configuration File          │
-│ Located: backend/camera_config.ini │
-│                                    │
-│ ✓ Connected & Working             │
-│                                    │
-└────────────────────────────────────┘
-```
-
-**Input Controls**:
-
-1. **Camera ID Input**: Comma-separated list (e.g., "0,1,2")
-   - Each number = system camera device ID
-   - Typically: 0 = built-in webcam, 1+ = USB cameras
-
-2. **[Update] Button**: 
-   - Saves to `camera_config.ini`
-   - Cameras loaded on next app restart
-   - Immediately reflected in system
-
-3. **[Reset to Defaults]**: Reverts to preset camera list
-
-4. **Active Camera List Display** (Read-only):
-   - Shows currently configured cameras from `camera_config.ini`
-   - Displays camera names from config + status
-   - Example names: "Gate A - Entrance", "Gate B - Exit"
-
-**Configuration Persistence**:
-- Settings stored in `backend/camera_config.ini` (INI file format)
-- Read by `MultiCameraManager.load_camera_config()`
-- Format:
-  ```ini
-  [Display Names]
-  0 = Gate A - Entrance
-  1 = Gate B - Exit
-  2 = Lobby - Main Hall
-  ```
+(Only contains entries for configured camera IDs)
 
 ---
 
@@ -835,8 +800,7 @@ FaceRecognitionSystem/
 │
 ├── 📄 README.md                          # This file
 ├── 🐍 run_frontend.py                    # Application entry point
-├── 📝 setup_frontend.sh                  # Dependency installation script (Ubuntu/Linux)
-├── 📝 setup_frontend.bat                 # Dependency installation script (Windows)
+├── � requirements.txt                   # Python dependencies
 │
 ├── 📁 frontend/                          # PySide6 GUI Application
 │   ├── 🐍 __init__.py                    # Package marker
@@ -940,11 +904,17 @@ FaceRecognitionSystem/
 cd /path/to/FaceRecognitionSystem
 ```
 
-### Step 2: Install Dependencies
+### Step 2: Create Virtual Environment (Recommended)
 
-**Automated (Ubuntu/Linux)**:
 ```bash
-bash setup_frontend.sh
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+### Step 3: Install Dependencies
+
+```bash
+pip install -r requirements.txt
 ```
 
 This installs:
@@ -954,15 +924,23 @@ This installs:
 - OpenCV (camera + image processing)
 - NumPy, Pandas (data handling)
 - Scikit-learn (similarity metrics)
+- And all other required packages
 
-**Manual Installation**:
+### Step 4: Run the Application
+
 ```bash
-pip install -r requirements.txt
+python3 run_frontend.py
 ```
 
-### Step 3: Configure Cameras
+### Step 5: Configure Cameras (via Settings Page)
 
-Edit `backend/camera_config.ini`:
+After launching the app:
+
+1. Navigate to **Settings** page
+2. Enter your active camera IDs (comma-separated, e.g., `0, 1, 2`) → Click **Update Camera List**
+3. (Optional) Assign friendly display names to each camera in the table → Click **Update/Overwrite Camera Names**
+
+This populates `backend/camera_config.ini` with:
 ```ini
 [Display Names]
 0 = Gate A - Entrance
@@ -970,14 +948,11 @@ Edit `backend/camera_config.ini`:
 2 = Lobby - Main Hall
 ```
 
-Or use the Settings page in the GUI to configure.
+Or directly edit `backend/camera_config.ini` (manually) if you prefer (not recommended).
 
-### Step 4: Run the Application
-```bash
-python3 run_frontend.py
-```
+---
 
-**Or use the Settings page to:**
+## Workflow: Camera Setup
 1. Navigate to **Settings** page
 2. Enter camera IDs (e.g., "0,1,2")
 3. Click **[Update]**

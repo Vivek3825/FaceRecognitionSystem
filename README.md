@@ -64,8 +64,6 @@ A full-featured surveillance desktop app with a modern dark-themed GUI. It monit
 FaceRecognitionSystem/
 │
 ├── run_frontend.py              # Entry point
-├── setup_frontend.sh            # Auto-installer (Linux)
-├── setup_frontend.bat           # Auto-installer (Windows)
 │
 ├── frontend/
 │   ├── main_window.py           # Window management & page routing
@@ -119,35 +117,37 @@ git clone https://github.com/your-username/FaceRecognitionSystem.git
 cd FaceRecognitionSystem
 ```
 
-**2. Install dependencies**
-
-Automated (Linux/macOS):
+**2. Create and activate virtual environment (recommended)**
 ```bash
-bash setup_frontend.sh
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-Manual:
+**3. Install dependencies**
 ```bash
 pip install -r requirements.txt
 ```
 
-Installs: `PySide6`, `torch`, `torchvision`, `facenet-pytorch`, `opencv-python`, `numpy`, `pandas`, `scikit-learn`
+Installs: `PySide6`, `torch`, `torchvision`, `facenet-pytorch`, `opencv-python`, `numpy`, `pandas`, `scikit-learn`, and all other required packages.
 
-**3. Configure cameras**
+**4. Run the application**
+```bash
+python3 run_frontend.py
+```
 
-Edit `backend/camera_config.ini`:
+**5. Configure cameras (via Settings page)**
+
+After launching the app:
+1. Navigate to **Settings** page
+2. Enter your active camera IDs (comma-separated, e.g., `0, 1, 2`) → Click **Update Camera List**
+3. (Optional) Assign friendly display names to each camera in the table → Click **Update/Overwrite Camera Names**
+
+This populates `backend/camera_config.ini` with:
 ```ini
 [Display Names]
 0 = Gate A - Entrance
 1 = Gate B - Exit
 2 = Lobby - Main Hall
-```
-
-Or configure via the **Settings** page in the GUI after launch.
-
-**4. Run the application**
-```bash
-python3 run_frontend.py
 ```
 
 ---
