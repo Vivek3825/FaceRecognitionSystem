@@ -2,85 +2,113 @@
 Settings page - application settings and preferences
 """
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
-    QLabel, QPushButton, QSlider, QCheckBox,
-    QSpinBox, QComboBox, QFrame, QTabWidget, QGroupBox
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
+    QPushButton, QLineEdit, QGroupBox
 )
-from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
-from frontend.widgets import BaseCard
-
+from PySide6.QtCore import QTimer, Qt
+from typing import List
 
 class SettingsPage(QWidget):
-    """Page for application settings"""
+    """Dynamic page for application settings"""
     
+    _default_camera_ids: List[int] = [0] 
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.init_ui()
     
     def init_ui(self):
-        """Initialize settings UI"""
+        """Initialize a clean, minimal settings UI"""
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(20)
+        main_layout.setContentsMargins(30, 30, 30, 30)
+        main_layout.setSpacing(25)
         
         # Title
-        title = QLabel("Settings")
+        title = QLabel("System Settings")
         title.setFont(QFont("Arial", 24, QFont.Bold))
         title.setStyleSheet("color: #ffffff;")
         main_layout.addWidget(title)
         
-        # Create tabs
-        tabs = QTabWidget()
-        tabs.setStyleSheet("""
-            QTabBar::tab {
-                background-color: #141829;
+        # --- NEW: Active Configuration Display Layout ---
+        display_group = QGroupBox("Active Camera List")
+        display_group.setStyleSheet("""
+            QGroupBox {
                 color: #a0a0a0;
-                padding: 10px 20px;
-                border: none;
-                border-bottom: 2px solid transparent;
-            }
-            QTabBar::tab:hover {
-                color: #00bfff;
-            }
-            QTabBar::tab:selected {
-                color: #ffffff;
-                border-bottom: 2px solid #00bfff;
-                background-color: #0a0e27;
-            }
-            QTabWidget::pane {
+                font-weight: bold;
                 border: 1px solid #1e2233;
+                border-radius: 8px;
+                margin-top: 15px;
+                padding-top: 20px;
+            }
+        """)
+        display_layout = QVBoxLayout()
+        
+        self.active_list_label = QLabel(self._get_formatted_id_string())
+        self.active_list_label.setAlignment(Qt.AlignCenter)
+        self.active_list_label.setStyleSheet("""
+            color: #00bfff; 
+            font-size: 18px; 
+            font-weight: bold;
+            padding: 10px;
+            background-color: #0a0e27;
+            border-radius: 4px;
+        """)
+        display_layout.addWidget(self.active_list_label)
+        display_group.setLayout(display_layout)
+        main_layout.addWidget(display_group)
+        
+        # --- Dynamic Camera Settings Group ---
+        cam_group = QGroupBox("Update Configuration")
+        cam_group.setStyleSheet("""
+            QGroupBox {
+                color: #a0a0a0;
+                font-weight: bold;
+                border: 1px solid #1e2233;
+                border-radius: 8px;
+                margin-top: 15px;
+                padding-top: 20px;
             }
         """)
         
-        # System settings tab
-        system_tab = self.create_system_settings()
-        tabs.addTab(system_tab, "System")
+        cam_layout = QVBoxLayout()
+        cam_layout.setSpacing(10)
         
-        # Camera settings tab
-        camera_tab = self.create_camera_settings()
-        tabs.addTab(camera_tab, "Cameras")
+        instruction_label = QLabel("Default Camera IDs (Comma-separated, e.g., 0, 1, 2):")
+        instruction_label.setStyleSheet("color: #ffffff; font-size: 14px;")
+        cam_layout.addWidget(instruction_label)
         
-        # Recognition settings tab
-        recognition_tab = self.create_recognition_settings()
-        tabs.addTab(recognition_tab, "Recognition")
+        # Input field for the comma-separated list
+        self.cam_input = QLineEdit()
+        self.cam_input.setText(", ".join(map(str, SettingsPage._default_camera_ids)))
+        self.cam_input.setPlaceholderText("Enter IDs like: 0, 1")
+        self.cam_input.setStyleSheet("""
+            QLineEdit {
+                background-color: #0a0e27;
+                color: #ffffff;
+                border: 1px solid #2a3452;
+                border-radius: 4px;
+                padding: 10px;
+                font-size: 16px;
+            }
+        """)
+        cam_layout.addWidget(self.cam_input)
         
-        # Notification settings tab
-        notification_tab = self.create_notification_settings()
-        tabs.addTab(notification_tab, "Notifications")
+        cam_group.setLayout(cam_layout)
+        main_layout.addWidget(cam_group)
         
-        # Database settings tab
-        database_tab = self.create_database_settings()
-        tabs.addTab(database_tab, "Database")
-        
-        main_layout.addWidget(tabs)
-        
-        # Action buttons
+        # --- Action Buttons & Feedback ---
         actions_layout = QHBoxLayout()
+        
+        # NEW: Status label for transient success messages
+        self.status_label = QLabel("")
+        self.status_label.setStyleSheet("color: #4caf50; font-size: 14px; font-weight: bold;")
+        actions_layout.addWidget(self.status_label)
+        
         actions_layout.addStretch()
         
-        save_btn = QPushButton("💾 Save Settings")
-        save_btn.setMinimumHeight(40)
+        save_btn = QPushButton("🔄 Update Camera List")
+        save_btn.setMinimumHeight(45)
         save_btn.setMinimumWidth(150)
         save_btn.setStyleSheet("""
             QPushButton {
@@ -89,317 +117,66 @@ class SettingsPage(QWidget):
                 border: none;
                 border-radius: 4px;
                 font-weight: bold;
-                font-size: 12px;
+                font-size: 14px;
+                padding: 0px 15px;
             }
-            QPushButton:hover {
-                background-color: #66bb6a;
-            }
+            QPushButton:hover { background-color: #66bb6a; }
+            QPushButton:pressed { background-color: #388e3c; }
         """)
+        save_btn.clicked.connect(self._process_and_save)
         actions_layout.addWidget(save_btn)
         
-        reset_btn = QPushButton("🔄 Reset to Defaults")
-        reset_btn.setMinimumHeight(40)
-        reset_btn.setMinimumWidth(150)
-        reset_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #1e2844;
-                color: #a0a0a0;
-                border: 1px solid #2a3452;
-                border-radius: 4px;
-                font-weight: bold;
-                font-size: 12px;
-            }
-            QPushButton:hover {
-                background-color: #2a3452;
-                color: #00bfff;
-            }
-        """)
-        actions_layout.addWidget(reset_btn)
-        
-        close_btn = QPushButton("✕ Close")
-        close_btn.setMinimumHeight(40)
-        close_btn.setMaximumWidth(100)
-        actions_layout.addWidget(close_btn)
-        
         main_layout.addLayout(actions_layout)
+        main_layout.addStretch()
         
         self.setLayout(main_layout)
-    
-    def create_system_settings(self):
-        """Create system settings tab"""
-        widget = QWidget()
-        layout = QVBoxLayout()
-        layout.setSpacing(20)
-        layout.setContentsMargins(20, 20, 20, 20)
+
+    def _get_formatted_id_string(self) -> str:
+        """Helper to format the list for the display label"""
+        if not SettingsPage._default_camera_ids:
+            return "No Cameras Configured"
+        return f"Currently Active IDs: [ {', '.join(map(str, SettingsPage._default_camera_ids))} ]"
+
+    def _process_and_save(self):
+        """Process the comma-separated string into a list and store it globally"""
+        raw_text = self.cam_input.text()
+        try:
+            # Parse list: split by comma, strip whitespace, check if it's a number
+            parsed_ids = [int(x.strip()) for x in raw_text.split(',') if x.strip().isdigit()]
+            
+            # Fallback if user entered garbage or left it empty
+            if not parsed_ids:
+                parsed_ids = [0]
+                
+            # Sort and save to the CLASS variable
+            SettingsPage._default_camera_ids = sorted(list(set(parsed_ids))) 
+            
+            # Update the text box to show the cleaned up input
+            cleaned_str = ", ".join(map(str, SettingsPage._default_camera_ids))
+            self.cam_input.setText(cleaned_str)
+            
+            # NEW: Update the display label above
+            self.active_list_label.setText(self._get_formatted_id_string())
+            
+            # NEW: Show transient success message
+            self._show_temporary_message("✅ Settings Saved Successfully!")
+            
+            print(f"✅ Settings Saved. Default IDs: {SettingsPage._default_camera_ids}")
+            
+        except Exception as e:
+            self._show_temporary_message("⚠️ Error parsing settings", error=True)
+            print(f"⚠️ Error parsing settings: {e}")
+
+    def _show_temporary_message(self, message: str, error: bool = False):
+        """Displays a message next to the button that fades out after a few seconds"""
+        color = "#f44336" if error else "#4caf50"
+        self.status_label.setStyleSheet(f"color: {color}; font-size: 14px; font-weight: bold;")
+        self.status_label.setText(message)
         
-        # Application settings
-        app_group = QGroupBox("Application")
-        app_layout = QGridLayout()
-        app_layout.setSpacing(15)
-        
-        # Theme
-        theme_label = QLabel("Theme:")
-        theme_label.setStyleSheet("color: #a0a0a0;")
-        app_layout.addWidget(theme_label, 0, 0)
-        
-        theme_combo = QComboBox()
-        theme_combo.addItems(["Dark", "Light", "Auto"])
-        theme_combo.setCurrentText("Dark")
-        app_layout.addWidget(theme_combo, 0, 1)
-        
-        # Language
-        lang_label = QLabel("Language:")
-        lang_label.setStyleSheet("color: #a0a0a0;")
-        app_layout.addWidget(lang_label, 1, 0)
-        
-        lang_combo = QComboBox()
-        lang_combo.addItems(["English", "Spanish", "French", "German"])
-        lang_combo.setCurrentText("English")
-        app_layout.addWidget(lang_combo, 1, 1)
-        
-        # Auto-start
-        autostart_check = QCheckBox("Start application on system startup")
-        autostart_check.setStyleSheet("color: #a0a0a0;")
-        autostart_check.setChecked(True)
-        app_layout.addWidget(autostart_check, 2, 0, 1, 2)
-        
-        # Minimize to tray
-        tray_check = QCheckBox("Minimize to system tray")
-        tray_check.setStyleSheet("color: #a0a0a0;")
-        tray_check.setChecked(True)
-        app_layout.addWidget(tray_check, 3, 0, 1, 2)
-        
-        app_group.setLayout(app_layout)
-        layout.addWidget(app_group)
-        
-        # System resources
-        resources_group = QGroupBox("System Resources")
-        resources_layout = QGridLayout()
-        resources_layout.setSpacing(15)
-        
-        # Max CPU usage
-        cpu_label = QLabel("Max CPU Usage (%):")
-        cpu_label.setStyleSheet("color: #a0a0a0;")
-        resources_layout.addWidget(cpu_label, 0, 0)
-        
-        cpu_spin = QSpinBox()
-        cpu_spin.setRange(10, 100)
-        cpu_spin.setValue(80)
-        cpu_spin.setMinimumHeight(30)
-        resources_layout.addWidget(cpu_spin, 0, 1)
-        
-        # Max RAM usage
-        ram_label = QLabel("Max RAM Usage (%):")
-        ram_label.setStyleSheet("color: #a0a0a0;")
-        resources_layout.addWidget(ram_label, 1, 0)
-        
-        ram_spin = QSpinBox()
-        ram_spin.setRange(10, 100)
-        ram_spin.setValue(70)
-        ram_spin.setMinimumHeight(30)
-        resources_layout.addWidget(ram_spin, 1, 1)
-        
-        resources_group.setLayout(resources_layout)
-        layout.addWidget(resources_group)
-        
-        layout.addStretch()
-        widget.setLayout(layout)
-        return widget
-    
-    def create_camera_settings(self):
-        """Create camera settings tab"""
-        widget = QWidget()
-        layout = QVBoxLayout()
-        layout.setSpacing(20)
-        layout.setContentsMargins(20, 20, 20, 20)
-        
-        group = QGroupBox("Camera Configuration")
-        group_layout = QGridLayout()
-        group_layout.setSpacing(15)
-        
-        # FPS limit
-        fps_label = QLabel("FPS Limit:")
-        fps_label.setStyleSheet("color: #a0a0a0;")
-        group_layout.addWidget(fps_label, 0, 0)
-        
-        fps_spin = QSpinBox()
-        fps_spin.setRange(1, 60)
-        fps_spin.setValue(30)
-        fps_spin.setMinimumHeight(30)
-        group_layout.addWidget(fps_spin, 0, 1)
-        
-        # Resolution
-        res_label = QLabel("Resolution:")
-        res_label.setStyleSheet("color: #a0a0a0;")
-        group_layout.addWidget(res_label, 1, 0)
-        
-        res_combo = QComboBox()
-        res_combo.addItems(["480p", "720p", "1080p", "2K"])
-        res_combo.setCurrentText("1080p")
-        group_layout.addWidget(res_combo, 1, 1)
-        
-        # Encoding
-        enc_label = QLabel("Video Codec:")
-        enc_label.setStyleSheet("color: #a0a0a0;")
-        group_layout.addWidget(enc_label, 2, 0)
-        
-        enc_combo = QComboBox()
-        enc_combo.addItems(["H.264", "H.265", "VP9"])
-        enc_combo.setCurrentText("H.264")
-        group_layout.addWidget(enc_combo, 2, 1)
-        
-        # Recording
-        recording_check = QCheckBox("Enable continuous recording")
-        recording_check.setStyleSheet("color: #a0a0a0;")
-        recording_check.setChecked(True)
-        group_layout.addWidget(recording_check, 3, 0, 1, 2)
-        
-        group.setLayout(group_layout)
-        layout.addWidget(group)
-        layout.addStretch()
-        widget.setLayout(layout)
-        return widget
-    
-    def create_recognition_settings(self):
-        """Create recognition settings tab"""
-        widget = QWidget()
-        layout = QVBoxLayout()
-        layout.setSpacing(20)
-        layout.setContentsMargins(20, 20, 20, 20)
-        
-        group = QGroupBox("Face Recognition")
-        group_layout = QGridLayout()
-        group_layout.setSpacing(15)
-        
-        # Confidence threshold
-        conf_label = QLabel("Confidence Threshold:")
-        conf_label.setStyleSheet("color: #a0a0a0;")
-        group_layout.addWidget(conf_label, 0, 0)
-        
-        conf_slider = QSlider(Qt.Horizontal)
-        conf_slider.setRange(50, 99)
-        conf_slider.setValue(85)
-        conf_slider.setMinimumHeight(30)
-        group_layout.addWidget(conf_slider, 0, 1)
-        
-        conf_value = QLabel("85%")
-        conf_value.setStyleSheet("color: #00bfff;")
-        group_layout.addWidget(conf_value, 0, 2)
-        
-        # Model
-        model_label = QLabel("Model:")
-        model_label.setStyleSheet("color: #a0a0a0;")
-        group_layout.addWidget(model_label, 1, 0)
-        
-        model_combo = QComboBox()
-        model_combo.addItems(["Default", "Optimized", "High Accuracy"])
-        model_combo.setCurrentText("Default")
-        group_layout.addWidget(model_combo, 1, 1, 1, 2)
-        
-        # Duplicate detection
-        duplicate_check = QCheckBox("Prevent duplicate detections")
-        duplicate_check.setStyleSheet("color: #a0a0a0;")
-        duplicate_check.setChecked(True)
-        group_layout.addWidget(duplicate_check, 2, 0, 1, 3)
-        
-        # Enable mask detection
-        mask_check = QCheckBox("Enable face mask detection")
-        mask_check.setStyleSheet("color: #a0a0a0;")
-        mask_check.setChecked(False)
-        group_layout.addWidget(mask_check, 3, 0, 1, 3)
-        
-        group.setLayout(group_layout)
-        layout.addWidget(group)
-        layout.addStretch()
-        widget.setLayout(layout)
-        return widget
-    
-    def create_notification_settings(self):
-        """Create notification settings tab"""
-        widget = QWidget()
-        layout = QVBoxLayout()
-        layout.setSpacing(20)
-        layout.setContentsMargins(20, 20, 20, 20)
-        
-        group = QGroupBox("Notifications")
-        group_layout = QGridLayout()
-        group_layout.setSpacing(10)
-        
-        notifications = [
-            ("Desktop notifications", True),
-            ("Email alerts", False),
-            ("Sound alerts", True),
-            ("Watchlist matches", True),
-            ("System errors", True),
-            ("Low disk space", True),
-        ]
-        
-        for i, (name, checked) in enumerate(notifications):
-            check = QCheckBox(name)
-            check.setStyleSheet("color: #a0a0a0;")
-            check.setChecked(checked)
-            group_layout.addWidget(check, i, 0)
-        
-        group.setLayout(group_layout)
-        layout.addWidget(group)
-        layout.addStretch()
-        widget.setLayout(layout)
-        return widget
-    
-    def create_database_settings(self):
-        """Create database settings tab"""
-        widget = QWidget()
-        layout = QVBoxLayout()
-        layout.setSpacing(20)
-        layout.setContentsMargins(20, 20, 20, 20)
-        
-        group = QGroupBox("Database & Storage")
-        group_layout = QGridLayout()
-        group_layout.setSpacing(15)
-        
-        # Database location
-        db_label = QLabel("Database Location:")
-        db_label.setStyleSheet("color: #a0a0a0;")
-        group_layout.addWidget(db_label, 0, 0)
-        
-        from pathlib import Path
-        default_db = Path(__file__).resolve().parents[2] / "data" / "database"
-        db_path_label = QLabel(str(default_db))
-        db_path_label.setStyleSheet("color: #666666;")
-        group_layout.addWidget(db_path_label, 0, 1)
-        
-        browse_btn = QPushButton("Browse...")
-        browse_btn.setMaximumWidth(100)
-        group_layout.addWidget(browse_btn, 0, 2)
-        
-        # Backup
-        backup_group = QGroupBox("Backup")
-        backup_layout = QGridLayout()
-        backup_layout.setSpacing(10)
-        
-        auto_backup = QCheckBox("Enable automatic backup")
-        auto_backup.setStyleSheet("color: #a0a0a0;")
-        auto_backup.setChecked(True)
-        backup_layout.addWidget(auto_backup, 0, 0, 1, 2)
-        
-        backup_freq_label = QLabel("Backup Frequency:")
-        backup_freq_label.setStyleSheet("color: #a0a0a0;")
-        backup_layout.addWidget(backup_freq_label, 1, 0)
-        
-        freq_combo = QComboBox()
-        freq_combo.addItems(["Daily", "Weekly", "Monthly"])
-        freq_combo.setCurrentText("Daily")
-        backup_layout.addWidget(freq_combo, 1, 1)
-        
-        backup_btn = QPushButton("🔄 Backup Now")
-        backup_btn.setMaximumWidth(120)
-        backup_layout.addWidget(backup_btn, 2, 0, 1, 2)
-        
-        backup_group.setLayout(backup_layout)
-        group_layout.addWidget(backup_group, 1, 0, 1, 3)
-        
-        group.setLayout(group_layout)
-        layout.addWidget(group)
-        layout.addStretch()
-        widget.setLayout(layout)
-        return widget
+        # Clear the message after 2500 ms (2.5 seconds)
+        QTimer.singleShot(2500, lambda: self.status_label.setText(""))
+
+    @classmethod
+    def get_startup_cameras(cls) -> List[int]:
+        """Class method to allow any file to grab the settings instantly"""
+        return cls._default_camera_ids

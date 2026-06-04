@@ -14,6 +14,8 @@ import configparser
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from frontend.pages.settings_page import SettingsPage
+
 class CameraStream:
     """Individual camera handler - captures frames in separate thread"""
     
@@ -103,6 +105,8 @@ class MultiCameraManager:
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.mtcnn = MTCNN(image_size=160, post_process=True, keep_all=True, device=self.device)
         self.model = InceptionResnetV1(pretrained='vggface2').eval().to(self.device)
+
+        self.avl_cameras = SettingsPage.get_startup_cameras()
         
         # Camera storage
         self.cameras: Dict[str, CameraStream] = {}
@@ -197,7 +201,7 @@ class MultiCameraManager:
     def start_default_cameras(self) -> int:
         """Start cameras 0 and 1 automatically"""
         started = 0
-        for camera_id in [0]:
+        for camera_id in self.avl_cameras:
             if self.add_camera(camera_id):
                 started += 1
         return started
