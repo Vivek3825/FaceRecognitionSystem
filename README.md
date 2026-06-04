@@ -1,373 +1,261 @@
-# AeroSecure - README.md is not updated yet with new aerosecure version
+# 🎯 Face Recognition Surveillance System
 
-<div align="center">
+> A professional desktop application for real-time multi-camera face detection, recognition, and person management — built with Python, PySide6, and deep learning.
 
-**A comprehensive face recognition system with futuristic web interface designed for airport security operations**
-
-[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://python.org)
-[![OpenCV](https://img.shields.io/badge/OpenCV-4.x-green.svg)](https://opencv.org)
-[![PyTorch](https://img.shields.io/badge/PyTorch-Latest-red.svg)](https://pytorch.org)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-
-</div>
-
-
+![Python](https://img.shields.io/badge/Python-3.8+-blue?logo=python&logoColor=white)
+![PySide6](https://img.shields.io/badge/PySide6-Qt%20for%20Python-green?logo=qt)
+![PyTorch](https://img.shields.io/badge/PyTorch-Deep%20Learning-orange?logo=pytorch)
+![OpenCV](https://img.shields.io/badge/OpenCV-Computer%20Vision-red?logo=opencv)
+![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
 ---
 
-## 📋 Quick Navigation
+## 📋 Table of Contents
 
-- [🚀 Quick Start](#-quick-start) - Get running in 2 minutes
-- [✨ Features](#-features) - What the system can do
-- [🏗️ Architecture](#️-architecture) - How it's built
-- [ Setup & Installation](#-setup--installation) - Getting started
-- [📖 Usage Guide](#-usage-guide) - How to use
-- [🛠️ Configuration](#️-configuration) - Customization
-- [🚀 Deployment](#-deployment) - Production setup
-
-
-
-## 🚀 Quick Start
-
-### **Option 1: Full System (Recommended)**
-```bash
-# Clone repository
-git clone https://github.com/Vivek3825/FaceRecognitionSystem.git
-cd FaceRecognitionSystem
-
-# Setup backend
-cd Backend/
-pip install -r requirements.txt
-python main.py  # Multi-camera GUI
-
-# Setup frontend (new terminal)
-cd Frontend/
-python -m http.server 8000
-# Open http://localhost:8000
-```
-
-### **Option 2: Backend Only**
-```bash
-cd Backend/
-python main.py  # Multi-camera GUI
-```
-
-### **Option 3: Frontend Only**
-```bash
-cd Frontend/
-python -m http.server 8000
-# Open http://localhost:8000
-```
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Application Screens](#application-screens)
+- [Database Schema](#database-schema)
+- [Configuration](#configuration)
+- [Troubleshooting](#troubleshooting)
+- [Roadmap](#roadmap)
 
 ---
 
-## ✨ Features
+## Overview
 
-### 🌐 **Frontend (AeroSecure Web Interface)**
-- **Modern Dashboard** - Real-time statistics and security alerts
-- **Camera Monitor** - Multi-camera surveillance with live detection
-- **Person Search** - Photo-based and name-based search capabilities
-- **Personnel Management** - Add new persons with facial capture
-- **Futuristic Design** - Dark theme with advanced animations
-- **Responsive Layout** - Works on desktop, tablet, and mobile
-- **Real-time Updates** - Live data visualization and notifications
-
-### 🔧 **Backend (Recognition Engine)**
-- **Multi-Camera Support** - Process multiple cameras simultaneously
-- **Real-time Recognition** - Live face detection and identification
-- **High Accuracy** - >95% recognition accuracy with confidence scoring
-- **Person Search** - Find person location across all cameras
-- **Fast Registration** - ~15 seconds vs ~3 minutes (10x improvement)
-- **Smart Processing** - Incremental data processing
-- **Performance Optimized** - GPU acceleration and threading support
-- **Database Management** - Efficient embedding storage and retrieval
-
-
-
-## 🏗️ Architecture
-
-### **System Overview**
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Backend       │    │   Database      │
-│   (Web UI)      │◄──►│   (API Server)  │◄──►│   (Embeddings)  │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  • Dashboard    │    │  • Multi-Camera │    │  • Face Data    │
-│  • Camera View  │    │  • Recognition  │    │  • Embeddings   │
-│  • Person Mgmt  │    │  • Person Search│    │  • Metadata     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-### **Technology Stack**
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **Frontend** | HTML5/CSS3/JavaScript | Modern web interface |
-| **Backend** | Python 3.12+ | Face recognition engine |
-| **AI Models** | MTCNN + InceptionResnetV1 | Face detection & recognition |
-| **Database** | NPZ + CSV | Embedding storage |
-| **GUI** | Tkinter | Desktop interface |
-| **API** | Flask | REST API server |
-
-### **Performance Improvements**
-- **Before**: Full reprocessing → ~3 minutes
-- **After**: Incremental processing → ~15 seconds
-- **Improvement**: 12x faster registration
+A full-featured surveillance desktop app with a modern dark-themed GUI. It monitors multiple camera feeds simultaneously, detects and recognizes faces in real time using FaceNet embeddings, and maintains a self-healing dataset with automatic consistency validation.
 
 ---
 
-## 🔧 Setup & Installation
+## Features
 
-### **System Requirements**
-- **Python** 3.12+
-- **RAM** 8GB+ (4GB minimum)
-- **Storage** 2GB+ free space
-- **Camera** Any USB/built-in camera
-- **Browser** Modern web browser (Chrome/Firefox recommended)
-
-### **Step 1: Clone Repository**
-```bash
-git clone https://github.com/Vivek3825/FaceRecognitionSystem.git
-cd FaceRecognitionSystem
-```
-
-### **Step 2: Setup Backend**
-```bash
-cd Backend/
-pip install -r requirements.txt
-
-# Process existing data (first time only)
-python src/detect_faces.py
-python src/extract_features.py
-```
-
-### **Step 3: Start System**
-```bash
-# Backend: Multi-camera system
-python main.py
-
-# Frontend: Web interface (new terminal)
-cd Frontend/
-python -m http.server 8000
-# Open http://localhost:8000
-```
+- **Multi-Camera Live Monitoring** — Simultaneous streams with configurable grid layouts (2×2, 1×4, 2×3)
+- **Face Detection** — MTCNN (Multi-task Cascaded Convolutional Networks)
+- **Face Recognition** — FaceNet InceptionResnet-V1 with cosine similarity matching (default threshold: 85%)
+- **3-Angle Person Registration** — Front, left, and right captures for robust recognition
+- **Self-Healing Dataset** — Automatic validation and repair of orphaned CSV rows or missing images on startup
+- **System Dashboard** — Live stats: registered persons, embeddings, image counts, and database size
+- **Thread-Safe Architecture** — Background workers for camera streams and long operations; UI never freezes
+- **Cross-Platform Camera Backends** — Auto-selects V4L2 (Linux), DirectShow (Windows), or AVFoundation (macOS)
 
 ---
 
-## 📖 Usage Guide
+## Tech Stack
 
-### **Backend (Multi-Camera System)**
-```bash
-cd Backend/
-python main.py
-```
-**Features:**
-- Multi-camera view with live recognition
-- Person search functionality  
-- Real-time face detection and identification
-- Parallel processing for multiple cameras
-
-### **Frontend (Web Interface)**
-```bash
-cd Frontend/
-python -m http.server 8000
-# Open http://localhost:8000
-```
-**Features:**
-- Modern dashboard with statistics
-- Camera monitoring interface
-- Person registration with photo capture
-- Search functionality (photo/name based)
-
-### **Person Registration Process**
-1. **Enter Name** - Type person's full name
-2. **Camera Access** - Allow camera permissions  
-3. **Capture Photos** - Take front, left, right angle photos
-4. **Submit** - System processes in ~15 seconds
-5. **Success** - Person registered and ready for recognition
+| Layer | Technology |
+|-------|------------|
+| GUI | PySide6 (Qt for Python), dark theme via `.qss` |
+| Computer Vision | OpenCV (cv2) — capture, resize, overlay drawing |
+| Face Detection | MTCNN (facenet-pytorch) |
+| Face Recognition | FaceNet InceptionResnet-V1 (512-dim embeddings) |
+| ML Backend | PyTorch, NumPy, Scikit-learn |
+| Data | CSV (metadata) + NPZ (binary embeddings) |
 
 ---
 
-## ⚡ Performance Metrics
-
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| **Registration Time** | ~3 minutes | ~15 seconds | **12x faster** |
-| **Processing Method** | Full reprocessing | Incremental only | **Smart** |
-| **Memory Usage** | ~500MB | ~200MB | **60% less** |
-| **Recognition Accuracy** | >95% | >95% | **Maintained** |
-
-| **Data Processed** | All 45 people (135 images) | New person only (3 images) | **45x less data** |
-| **System Response** | Blocked during processing | Responsive | **Better UX** |
-
-### **Technical Improvements**
-- **Incremental Processing** - Only processes new person data
-- **Smart Rollback** - Failed registrations don't corrupt data
-- **Path Consistency** - Unified relative paths across all CSV files
-- **Concurrent Processing** - Non-blocking registration workflow
-
----
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 FaceRecognitionSystem/
-├── Frontend/                    # Web Interface
-│   ├── index.html              # Main application
-│   ├── html_section_files/     # Modular page sections
-│   │   ├── dashboard.html      # Dashboard page
-│   │   ├── camera_monitor.html # Camera monitoring
-│   │   ├── person_search.html  # Person search
-│   │   └── add_person.html     # Person registration
-│   ├── styles/                 # CSS styling
-│   │   ├── main.css           # Core styles
-│   │   └── animations.css     # UI animations
-│   └── js/                    # JavaScript
-│       ├── main.js            # Application logic
-│       └── section_loader.js  # Dynamic page loading
-└── Backend/                   # Recognition Engine
-    ├── main.py               # Multi-camera launcher
-    ├── src/                  # Core modules
-    │   ├── detect_faces.py   # Face detection
-    │   ├── extract_features.py # Feature extraction
-    │   ├── multi_camera_manager.py # Multi-camera engine
-    │   └── multi_camera_gui.py # GUI interface
-    └── dataset/              # Face database
-        ├── images/           # Original photos
-        ├── faces/           # Processed faces
-        └── embeddings/      # Face embeddings
+│
+├── run_frontend.py              # Entry point
+├── setup_frontend.sh            # Auto-installer (Linux)
+├── setup_frontend.bat           # Auto-installer (Windows)
+│
+├── frontend/
+│   ├── main_window.py           # Window management & page routing
+│   ├── config.py                # Colors, thresholds, sizes
+│   ├── utils.py                 # Shared helpers
+│   ├── pages/
+│   │   ├── dashboard_page.py    # Stats & person management
+│   │   ├── camera_page.py       # Live multi-camera monitoring
+│   │   ├── registration_page.py # Person enrollment workflow
+│   │   └── settings_page.py     # Camera configuration
+│   ├── widgets/
+│   │   ├── sidebar.py           # Navigation with active state
+│   │   ├── topbar.py            # Clock & system status
+│   │   ├── cards.py             # Stat cards & info panels
+│   │   └── overlays.py          # Alerts, spinners, dialogs
+│   └── styles/
+│       └── dark_theme.qss       # Qt stylesheet
+│
+└── backend/
+    ├── camera_config.ini        # Camera IDs & display names
+    └── src/
+    │   ├── dataset_manager.py   # Validation & auto-repair
+    │   ├── multi_camera_manager.py  # Camera threads & recognition
+    │   ├── person_registration.py   # Registration & CSV updates
+    │   └── stats_manager.py     # Read-only statistics
+    └── dataset/
+        ├── info.csv             # Master person registry
+        ├── face_info.csv        # Face quality metadata
+        ├── images/              # Raw 3-angle captures
+        ├── faces/               # MTCNN-cropped face images
+        └── embeddings/
+            ├── all_embeddings.npz   # Binary FaceNet embeddings
+            └── embeddings.csv       # Embedding metadata
 ```
 
 ---
 
-## 🛠️ Configuration
+## Installation
 
-### **Camera Settings**
-```python
-# Adjust camera detection in main.py
-cameras = []
-for i in range(3):  # Check first 3 cameras
-    cap = cv2.VideoCapture(i)
-    if cap.isOpened():
-        cameras.append({'id': i, 'name': f'Camera {i}'})
-```
+### Prerequisites
 
-### **Performance Tuning**
-```python
-# For better performance (lower resource usage)
-DETECTION_FPS = 10
-FACE_DETECTION_THRESHOLD = 0.9
-CONFIDENCE_THRESHOLD = 0.6
+- Python 3.8+
+- Camera hardware (built-in or USB webcam)
+- GPU with CUDA (recommended; CPU fallback supported)
 
-# For better accuracy (higher resource usage)
-DETECTION_FPS = 20
-FACE_DETECTION_THRESHOLD = 0.7
-CONFIDENCE_THRESHOLD = 0.8
-```
+### Steps
 
----
-
-## 🆘 Troubleshooting
-
-### **Common Issues**
-| Problem | Solution |
-|---------|----------|
-| **Camera not detected** | Check USB connection, try different camera ID |
-| **Low FPS** | Reduce detection threshold, close other apps |
-| **No faces detected** | Improve lighting, check camera angle |
-| **Wrong recognition** | Add more training images, retrain |
-| **High CPU usage** | Enable GPU acceleration, reduce FPS |
-| **GUI freezing** | Restart application, check thread issues |
-
-### **Debug Mode**
+**1. Clone the repository**
 ```bash
-# Start with debug info
-cd Backend/
-python main.py
-# Watch console for detailed logs
+git clone https://github.com/your-username/FaceRecognitionSystem.git
+cd FaceRecognitionSystem
 ```
 
-### **Reset System**
+**2. Install dependencies**
+
+Automated (Linux/macOS):
 ```bash
-# If system gets corrupted, rebuild embeddings
-cd Backend/
-python src/detect_faces.py
-python src/extract_features.py
+bash setup_frontend.sh
 ```
 
----
-
-## 🚀 Deployment
-
-### **Development**
+Manual:
 ```bash
-# Backend
-cd Backend && python main.py
-
-# Frontend  
-cd Frontend && python -m http.server 8000
+pip install -r requirements.txt
 ```
 
-### **Production**
+Installs: `PySide6`, `torch`, `torchvision`, `facenet-pytorch`, `opencv-python`, `numpy`, `pandas`, `scikit-learn`
+
+**3. Configure cameras**
+
+Edit `backend/camera_config.ini`:
+```ini
+[Display Names]
+0 = Gate A - Entrance
+1 = Gate B - Exit
+2 = Lobby - Main Hall
+```
+
+Or configure via the **Settings** page in the GUI after launch.
+
+**4. Run the application**
 ```bash
-# Use production WSGI server
-pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:5000 simple_api:app
-```
-
-### **Docker**
-```dockerfile
-FROM python:3.12-slim
-WORKDIR /app
-COPY Backend/ .
-RUN pip install -r requirements.txt
-EXPOSE 5000
-CMD ["python", "main.py"]
+python3 run_frontend.py
 ```
 
 ---
 
-## 🎯 Performance Metrics
+## Usage
 
-| Metric | Value | Notes |
-|--------|-------|--------|
-| **Recognition Accuracy** | >95% | On known faces |
-| **Processing Speed** | <100ms | Per face detection |
-| **Multi-Camera FPS** | 10-15 | Per camera |
-| **Memory Usage** | ~200MB | Per camera |
-| **Startup Time** | ~3-5 seconds | Model loading |
-| **Database Size** | ~50MB | 1000 faces |
+### First-Time Setup
 
----
+1. Launch the app → **Dashboard** loads and validates dataset automatically
+2. Go to **Registration** → Enter a name, start the camera, capture Front / Left / Right angles → click **Commit**
+3. Go to **Camera Monitor** → click **Load** (initializes AI models), then **Start**
+4. Recognized faces appear with name and confidence score overlaid on the live feed
 
-## 📄 License
+### Registration Workflow
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) before submitting PRs.
+Each person requires 3 angle captures before committing. The checklist on the right tracks progress. On **Commit**:
+- Images are saved to `dataset/images/`
+- `info.csv` is updated with person metadata
+- FaceNet embeddings are generated and stored in `all_embeddings.npz`
+- A unique ID (e.g., `P001`, `P002`) is auto-assigned
 
 ---
 
-## 🎉 Acknowledgments
+## Application Screens
 
-- **MTCNN** for face detection
-- **InceptionResnetV1** for face recognition
-- **OpenCV** for computer vision
-- **PyTorch** for deep learning
-- Airport security teams for requirements and feedback
+### Dashboard
+Central hub showing 6 stat cards (total persons, embeddings, unique embeddings, original images, face images, database size) and a persons table with safe remove functionality. Refreshes every 10 seconds. All deletions run in a background thread to keep the UI responsive.
+
+### Camera Monitor
+Live grid of camera feeds. Click any thumbnail to enlarge it in the right panel. A detection list below the controls shows real-time recognition results across all active cameras, including confidence scores.
+
+### Registration
+Guided enrollment with live camera preview. Captures 3 face angles, validates with MTCNN before storing, and shows a progress checklist. Blocks commit until all 3 angles are captured.
+
+### Settings
+Configure camera device IDs (comma-separated, e.g., `0,1,2`). Changes persist to `camera_config.ini` and take effect on next load.
 
 ---
 
-<div align="center">
+## Database Schema
 
-**Made with ❤️ for Airport Security Teams Worldwide**
+**`info.csv`** — Master registry (one row per image)
+```
+Sr No. | Name      | ID   | Image Path
+1      | John Doe  | P001 | dataset/images/p1_front.jpeg
+2      | John Doe  | P001 | dataset/images/p1_left.jpeg
+3      | John Doe  | P001 | dataset/images/p1_right.jpeg
+```
 
-⭐ **Star this repo if you found it helpful!** ⭐
+**`embeddings.csv`** — Embedding metadata
+```
+ID   | Name     | Embedding Key | Timestamp
+P001 | John Doe | P001_front    | 2024-06-04 10:30:45
+P001 | John Doe | P001_left     | 2024-06-04 10:30:46
+```
 
-</div>
+**`all_embeddings.npz`** — Binary NumPy archive of 512-dimensional FaceNet vectors, keyed by `{ID}_{angle}`.
+
+---
+
+## Configuration
+
+Key settings in `frontend/config.py`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `DEFAULT_CONFIDENCE_THRESHOLD` | `85` | Minimum match confidence (%) |
+| `DEFAULT_FPS` | `30` | Target camera frame rate |
+| `DEFAULT_RESOLUTION` | `1080p` | Camera capture resolution |
+| `SIDEBAR_WIDTH` | `250` | Sidebar width in pixels |
+| `COLOR_PRIMARY` | `#00bfff` | Accent color (cyan) |
+| `COLOR_BACKGROUND` | `#0a0e27` | Background color (dark navy) |
+
+---
+
+## Troubleshooting
+
+| Issue | Likely Cause | Fix |
+|-------|-------------|-----|
+| "No camera found" on Load | Camera not detected | Run `ls /dev/video*` on Linux; check USB connection |
+| "Failed to initialize MTCNN" | PyTorch not installed or GPU error | Run `pip install torch torchvision` or use CPU fallback |
+| "CSV file not found" | Dataset folder missing | Create dataset structure or extract `dummy_dataset.zip` |
+| Registration hangs | Face detection timeout | Ensure face is clearly visible in good lighting |
+| Settings not persisting | Config file permissions | Check write permissions on `backend/camera_config.ini` |
+
+---
+
+## Performance Tips
+
+- **Enable GPU**: Install CUDA + cuDNN for significantly faster face detection
+- **Limit cameras**: Up to 4 simultaneous streams recommended for optimal performance
+- **Adjust threshold**: Increase to 90%+ for stricter matching (fewer false positives)
+- **Reduce resolution**: Use 480p instead of 1080p for smoother streaming on slower hardware
+
+---
+
+## Roadmap
+
+- [ ] Liveness detection (anti-spoofing)
+- [ ] Attendance logging with timestamps
+- [ ] CSV / PDF report export
+- [ ] Alert system for unrecognized persons
+- [ ] Database backup & restoration
+- [ ] REST API for external integration
+- [ ] Multi-user authentication
+
+---
+
+## Author
+
+**Bablu** · Version 1.0.0 · MIT License
