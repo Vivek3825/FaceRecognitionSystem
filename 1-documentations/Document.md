@@ -157,7 +157,7 @@ backend/
 ┌─────────────────────────────────────────────────────┐
 │  System Statistics & Database Info              [+] │
 ├─────────────────────────────────────────────────────┤
-│                                                      │
+│                                                     │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
 │  │ 👥           │  │ 🧠           │  │ 🔗           │
 │  │ Total        │  │ Total        │  │ Unique       │
@@ -175,9 +175,9 @@ backend/
 │  ┌──────────────────────────────────────────────────┐
 │  │ Registered Persons Table                         │
 │  ├──────────────────────────────────────────────────┤
-│  │ Sr.No | Name         | ID    | Images | Actions │
-│  │ 1     | John Doe     | P001  | 3      | Remove  │
-│  │ 2     | Sarah Smith  | P002  | 3      | Remove  │
+│  │ Sr.No | Name         | ID    | Images | Actions  │
+│  │ 1     | John Doe     | P001  | 3      | Remove   │
+│  │ 2     | Sarah Smith  | P002  | 3      | Remove   │
 │  │ ...                                              │
 │  └──────────────────────────────────────────────────┘
 └─────────────────────────────────────────────────────┘
@@ -207,25 +207,25 @@ backend/
 **Layout**:
 ```
 ┌─────────────────────────────────────────────────────┐
-│ Camera Monitor                                       │
+│ Camera Monitor                                      │
 ├─────────────────┬───────────────────────────────────┤
 │ LEFT SECTION    │ RIGHT SECTION                     │
 ├─────────────────┼───────────────────────────────────┤
 │                 │                                   │
 │ View Mode: [▼]  │  Selected Camera                  │
-│ [Load] [Start]  │  ┌───────────────────────────┐   │
-│ [Stop]          │  │                           │   │
-│                 │  │  ENLARGED FEED (800×420)  │   │
-│ ┌─────────────┐ │  │                           │   │
-│ │ CAM 1       │ │  │ Shows selected camera's   │   │
-│ │ (thumbnail) │ │  │ live feed + overlay       │   │
-│ │             │ │  │                           │   │
-│ └─────────────┘ │  └───────────────────────────┘   │
+│ [Load] [Start]  │  ┌───────────────────────────┐    │
+│ [Stop]          │  │                           │    │
+│                 │  │  ENLARGED FEED (800×420)  │    │
+│ ┌─────────────┐ │  │                           │    │
+│ │ CAM 1       │ │  │ Shows selected camera's   │    │
+│ │ (thumbnail) │ │  │ live feed + overlay       │    │
+│ │             │ │  │                           │    │
+│ └─────────────┘ │  └───────────────────────────┘    │
 │ ┌─────────────┐ │                                   │
 │ │ CAM 2       │ │  Camera Details:                  │
-│ │ (thumbnail) │ │  Name: Gate A - Entrance         │
-│ │             │ │  FPS: 30                         │
-│ └─────────────┘ │  Status: Active                  │
+│ │ (thumbnail) │ │  Name: Gate A - Entrance          │
+│ │             │ │  FPS: 30                          │
+│ └─────────────┘ │  Status: Active                   │
 │                 │                                   │
 │ Live Detections │                                   │
 │ ├─ John Doe     │                                   │
@@ -290,7 +290,7 @@ backend/
 │ [Clear Form]     │  ☐ Left   (0%)                 │
 │ [Commit]         │  ☐ Right  (0%)                 │
 │                  │                                │
-│ Status Messages: │  (Shows which angles captured)│
+│ Status Messages: │  (Shows which angles captured) │
 │ [Messages...]    │                                │
 │                  │                                │
 └──────────────────┴────────────────────────────────┘
@@ -1067,7 +1067,7 @@ COLOR_SUCCESS = "#4caf50"       # Green
 
 **Last Updated**: June 4, 2024
 **Version**: 1.0.0
-**Author**: Bablu
+**Author**: Vivek Avhad
 **License**: MIT (or your chosen license)
    python3 run_frontend.py
    ```

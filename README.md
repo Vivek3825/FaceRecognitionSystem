@@ -256,6 +256,22 @@ Key settings in `frontend/config.py`:
 
 ---
 
+## Screenshots
+
+### Dashboard
+![Dashboard](1-documentations/dashboard.png)
+
+### Camera Monitoring
+![Camera Monitoring](1-documentations/camera_page.png)
+
+### Passenger Registration
+![Passenger Registration](1-documentations/registration_page.png)
+
+### Settings
+![Settings](1-documentations/setting.png)
+
+---
+
 ## Author
 
-**Bablu** · Version 1.0.0 · MIT License
+**Vivek Avhad** · Version 1.0.0 · MIT License
