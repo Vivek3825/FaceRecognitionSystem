@@ -12,10 +12,15 @@ from pathlib import Path
 import shutil
 
 from frontend.widgets import SidebarWidget, TopBarWidget
+# from frontend.pages import (
+#     DashboardPage, CameraMonitorPage, PersonSearchPage,
+#     RegistrationPage, ReportsPage, SettingsPage
+# )
+
 from frontend.pages import (
-    DashboardPage, CameraMonitorPage, PersonSearchPage,
-    RegistrationPage, ReportsPage, SettingsPage
-)
+    DashboardPage, CameraMonitorPage, RegistrationPage,
+    SettingsPage 
+    )
 
 #from backend.src.multi_camera_manager import MultiCameraManager
 # from backend.src.person_registration import PersonRegistrationSystem
@@ -82,9 +87,9 @@ class MainWindow(QMainWindow):
         self.pages = {
             "dashboard": DashboardPage(),
             "camera": CameraMonitorPage(),
-            "search": PersonSearchPage(),
             "registration": RegistrationPage(),
-            "reports": ReportsPage(),
+            #"search": PersonSearchPage(),
+            #"reports": ReportsPage(),
             "settings": SettingsPage(),
         }
         
