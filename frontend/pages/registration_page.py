@@ -380,7 +380,7 @@ class RegistrationPage(QWidget):
     def _safe_cleanup(self):
         """Cleanup resources when application closes"""
         self.shutdown_camera()
-        print("✅ RegistrationPage cleanup complete")
+        print("✅ RegistrationPage cleanup complete - Camera resources cleanly released.")
 
     # def closeEvent(self, event):
     #     """Graceful hardware cleanup overrides on interface closes"""
