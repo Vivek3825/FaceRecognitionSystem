@@ -265,7 +265,7 @@ Key settings in `frontend/config.py`:
 ![Camera Monitoring](1-documentations/camera_page.png)
 
 ### Passenger Registration
-![Passenger Registration](1-documentations/registration_page.png)
+![Person Registration](1-documentations/registration_page.png)
 
 ### Settings
 ![Settings](1-documentations/setting.png)
