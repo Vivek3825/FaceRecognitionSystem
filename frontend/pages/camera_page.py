@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
     QLabel, QPushButton, QFrame, QComboBox, QSlider,
     QSpinBox, QDialog, QApplication, QScrollArea, QPlainTextEdit
 )
-from PySide6.QtCore import Qt, Signal, QTimer
+from PySide6.QtCore import Qt, Signal, QTimer, QThread
 from PySide6.QtGui import QFont, QImage, QPixmap
 from frontend.widgets import CameraCard, BaseCard, AlertWidget
 
@@ -16,6 +16,16 @@ from backend.src.multi_camera_manager import MultiCameraManager
 
 LARGE_FEED_W = 800
 LARGE_FEED_H = 420
+
+class ModelLoaderThread(QThread):
+    """Loads heavy PyTorch models on a separate CPU core to prevent UI freezing"""
+    finished_loading = Signal(object) 
+
+    def run(self):
+        # This completely bypasses the UI thread and GIL contention!
+        from backend.src.multi_camera_manager import MultiCameraManager
+        manager = MultiCameraManager() 
+        self.finished_loading.emit(manager)
 
 class CameraMonitorPage(QWidget):
     """Multi-camera live monitoring page"""
@@ -175,11 +185,18 @@ class CameraMonitorPage(QWidget):
         right_layout.addStretch()
         main_layout.addLayout(right_layout)
 
-
         self.setLayout(main_layout)
 
     def _load_button(self):
-        self.manager = MultiCameraManager()  # MultiCameraManager instance
+            self._show_temporary_warning("⏳ Loading AI Models... Please wait. This may take 30-40 seconds.")
+            self.loader_thread = ModelLoaderThread()
+            self.loader_thread.finished_loading.connect(self._on_models_loaded)
+            self.loader_thread.start()
+
+    def _on_models_loaded(self, manager):
+        """This runs automatically the exact millisecond PyTorch is ready"""
+        self.manager = manager
+        self._show_temporary_warning("✅ AI Models Loaded Successfully! You can now click Start.")
 
     def _start_button(self):
         if hasattr(self, 'manager'):
@@ -195,10 +212,20 @@ class CameraMonitorPage(QWidget):
             if hasattr(self, 'avl_cameras'):
                 self.manager.cleanup()
                 self._clear_camera_details()
+                self._reset_camera_view()
+
+                self._show_temporary_warning(
+                    "✅ Cameras stopped successfully."
+                )
             else:
-                self._show_temporary_warning("⚠️ Please start the cameras first.")
+                self._show_temporary_warning(
+                    "⚠️ Please start the cameras first."
+                )
         else:
-            self._show_temporary_warning("⚠️ Please click 'Load' first.")
+            self._show_temporary_warning(
+                "⚠️ Please click 'Load' first."
+            )
+
 
     def _show_temporary_warning(self, message):
         self.warning_label.setText(message)
@@ -441,6 +468,43 @@ class CameraMonitorPage(QWidget):
                         padding: 15px;
                     }
                 """)
+
+    def _reset_camera_view(self):
+        # Stop timers
+        if hasattr(self, 'frame_timer'):
+            self.frame_timer.stop()
+
+        if hasattr(self, 'detection_timer'):
+            self.detection_timer.stop()
+
+        # Remove all camera cards from grid
+        while self.camera_grid.count():
+            item = self.camera_grid.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+        # Clear camera data
+        self.camera_cards.clear()
+        self.frame_times.clear()
+        self.selected_camera = None
+
+        # Reset right-side preview
+        self.large_feed_label.clear()
+        self.large_feed_label.setText("Select a camera to view")
+
+        # Clear detections
+        while self.detections_layout.count():
+            item = self.detections_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+
+        # Restore empty grid appearance
+        placeholder = QLabel("No cameras running")
+        placeholder.setAlignment(Qt.AlignCenter)
+        placeholder.setStyleSheet("color: #666666; font-size: 16px;")
+        self.camera_grid.addWidget(placeholder, 0, 0)
 
     
     def _safe_cleanup(self):

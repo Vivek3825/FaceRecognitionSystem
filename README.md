@@ -6,6 +6,7 @@
 ![PySide6](https://img.shields.io/badge/PySide6-Qt%20for%20Python-green?logo=qt)
 ![PyTorch](https://img.shields.io/badge/PyTorch-Deep%20Learning-orange?logo=pytorch)
 ![OpenCV](https://img.shields.io/badge/OpenCV-Computer%20Vision-red?logo=opencv)
+![Firebase](https://img.shields.io/badge/Firebase-Authentication-yellow?logo=firebase)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
 ---
@@ -28,19 +29,20 @@
 
 ## Overview
 
-A full-featured surveillance desktop app with a modern dark-themed GUI. It monitors multiple camera feeds simultaneously, detects and recognizes faces in real time using FaceNet embeddings, and maintains a self-healing dataset with automatic consistency validation.
+A full-featured surveillance desktop app with a modern dark-themed GUI. Users log in via Firebase authentication before accessing the system. It monitors multiple camera feeds simultaneously, detects and recognizes faces in real time using FaceNet embeddings, and maintains a self-healing dataset with automatic consistency validation.
 
 ---
 
 ## Features
 
+- **Firebase Authentication** — Secure email/password login, sign-up, and password reset; clean logout returns to login screen without reloading AI models
 - **Multi-Camera Live Monitoring** — Simultaneous streams with configurable grid layouts (2×2, 1×4, 2×3)
 - **Face Detection** — MTCNN (Multi-task Cascaded Convolutional Networks)
 - **Face Recognition** — FaceNet InceptionResnet-V1 with cosine similarity matching (default threshold: 85%)
 - **3-Angle Person Registration** — Front, left, and right captures for robust recognition
 - **Self-Healing Dataset** — Automatic validation and repair of orphaned CSV rows or missing images on startup
 - **System Dashboard** — Live stats: registered persons, embeddings, image counts, and database size
-- **Thread-Safe Architecture** — Background workers for camera streams and long operations; UI never freezes
+- **Thread-Safe Architecture** — `ModelLoaderThread` loads heavy AI models on a background CPU core (30–40s, UI stays fully responsive); background workers for camera streams and long operations
 - **Cross-Platform Camera Backends** — Auto-selects V4L2 (Linux), DirectShow (Windows), or AVFoundation (macOS)
 
 ---
@@ -50,6 +52,7 @@ A full-featured surveillance desktop app with a modern dark-themed GUI. It monit
 | Layer | Technology |
 |-------|------------|
 | GUI | PySide6 (Qt for Python), dark theme via `.qss` |
+| Authentication | Firebase (Pyrebase4) — email/password auth |
 | Computer Vision | OpenCV (cv2) — capture, resize, overlay drawing |
 | Face Detection | MTCNN (facenet-pytorch) |
 | Face Recognition | FaceNet InceptionResnet-V1 (512-dim embeddings) |
@@ -66,16 +69,17 @@ FaceRecognitionSystem/
 ├── run_frontend.py              # Entry point
 │
 ├── frontend/
-│   ├── main_window.py           # Window management & page routing
+│   ├── main_window.py           # Window management, login loop & logout handling
 │   ├── config.py                # Colors, thresholds, sizes
 │   ├── utils.py                 # Shared helpers
 │   ├── pages/
+│   │   ├── login_page.py        # Firebase login / sign-up / password reset [NEW]
 │   │   ├── dashboard_page.py    # Stats & person management
 │   │   ├── camera_page.py       # Live multi-camera monitoring
 │   │   ├── registration_page.py # Person enrollment workflow
 │   │   └── settings_page.py     # Camera configuration
 │   ├── widgets/
-│   │   ├── sidebar.py           # Navigation with active state
+│   │   ├── sidebar.py           # Navigation with active state + logout button
 │   │   ├── topbar.py            # Clock & system status
 │   │   ├── cards.py             # Stat cards & info panels
 │   │   └── overlays.py          # Alerts, spinners, dialogs
@@ -85,10 +89,11 @@ FaceRecognitionSystem/
 └── backend/
     ├── camera_config.ini        # Camera IDs & display names
     └── src/
-    │   ├── dataset_manager.py   # Validation & auto-repair
+    │   ├── login_setup.py           # FirebaseAuth — Pyrebase4 wrapper [NEW]
+    │   ├── dataset_manager.py       # Validation & auto-repair
     │   ├── multi_camera_manager.py  # Camera threads & recognition
     │   ├── person_registration.py   # Registration & CSV updates
-    │   └── stats_manager.py     # Read-only statistics
+    │   └── stats_manager.py         # Read-only statistics
     └── dataset/
         ├── info.csv             # Master person registry
         ├── face_info.csv        # Face quality metadata
@@ -108,6 +113,7 @@ FaceRecognitionSystem/
 - Python 3.8+
 - Camera hardware (built-in or USB webcam)
 - GPU with CUDA (recommended; CPU fallback supported)
+- Firebase project with **Email/Password** authentication enabled
 
 ### Steps
 
@@ -117,7 +123,7 @@ git clone https://github.com/your-username/FaceRecognitionSystem.git
 cd FaceRecognitionSystem
 ```
 
-**2. Create and activate virtual environment (recommended)**
+**2. Create and activate virtual environment**
 ```bash
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
@@ -128,21 +134,69 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Installs: `PySide6`, `torch`, `torchvision`, `facenet-pytorch`, `opencv-python`, `numpy`, `pandas`, `scikit-learn`, and all other required packages.
+Installs: `PySide6`, `torch`, `torchvision`, `facenet-pytorch`, `opencv-python`, `pyrebase4`, `numpy`, `pandas`, `scikit-learn`, and all other required packages.
 
-**4. Run the application**
+**4. Firebase setup**
+
+Create your own Firebase project and add credentials to `backend/src/login_setup.py`:
+
+**Step 1** — Go to [Firebase Console](https://console.firebase.google.com/) → **Add project**
+
+**Step 2** — In your project: **Project Settings → General → Your apps → Add app (Web `</>`)**  
+Copy the `firebaseConfig` object shown and paste it into `login_setup.py`:
+
+```python
+# REPLACE
+config_path = Path(__file__).parent.parent / "login_credentials.json"
+
+try:
+    # Safely open and read the JSON file
+    with open(config_path, 'r') as file:
+        self.firebaseConfig = json.load(file)     
+
+except FileNotFoundError:
+    print(f"❌ CRITICAL ERROR: Could not find credentials at {config_path}")
+    print("Please ensure 'login_credentials.json' exists in your backend folder.")
+    sys.exit(1) # Stop the application safely if credentials are missing
+except json.JSONDecodeError:
+    print(f"❌ CRITICAL ERROR: 'login_credentials.json' is not formatted correctly.")
+    sys.exit(1)
+```
+```python
+# WITH
+self.firebaseConfig = {
+    "apiKey": "Your API Key",
+    "authDomain": "Your Auth Domain",
+    "projectId": "Your Project ID",
+    "databaseURL": "Your Database URL",
+    "storageBucket": "Your Storage Bucket",
+    "messagingSenderId": "Your Messaging Sender ID",
+    "appId": "Your App ID",
+    "measurementId": "Your Measurement ID"
+}
+```
+
+**Step 3** — Enable **Authentication → Sign-in method → Email/Password**
+
+**Step 4** — Create a test user via **Authentication → Users → Add user**, or use **Sign Up** in the app
+
+> ⚠️ Never commit real credentials to a public repository.  
+> Add `login_setup.py` to `.gitignore`, or use environment variables:
+> ```python
+> import os
+> "apiKey": os.environ.get("FIREBASE_API_KEY")
+> ```
+
+**5. Run the application**
 ```bash
 python3 run_frontend.py
 ```
 
-**5. Configure cameras (via Settings page)**
+AI models (MTCNN + FaceNet) load in the background when you click **Load** on the Camera Monitor page — the login screen appears instantly on startup.
 
-After launching the app:
-1. Navigate to **Settings** page
-2. Enter your active camera IDs (comma-separated, e.g., `0, 1, 2`) → Click **Update Camera List**
-3. (Optional) Assign friendly display names to each camera in the table → Click **Update/Overwrite Camera Names**
+**6. Configure cameras (via Settings page)**
 
-This populates `backend/camera_config.ini` with:
+Enter active camera IDs (e.g., `0, 1, 2`) and optionally assign display names. Saved to `backend/camera_config.ini`:
 ```ini
 [Display Names]
 0 = Gate A - Entrance
@@ -154,36 +208,46 @@ This populates `backend/camera_config.ini` with:
 
 ## Usage
 
+### Login & Logout
+
+- **Login**: Enter registered email and password → click **Login**
+- **Sign Up**: Fill in email and password → click **Sign Up**, then log in
+- **Forgot Password**: Enter email → click **Forgot Password?** → check inbox for reset link
+- **Logout**: Click the **Logout** button in the sidebar — returns to the login screen cleanly
+
 ### First-Time Setup
 
-1. Launch the app → **Dashboard** loads and validates dataset automatically
+1. Launch the app → log in → **Dashboard** loads and validates dataset automatically
 2. Go to **Registration** → Enter a name, start the camera, capture Front / Left / Right angles → click **Commit**
-3. Go to **Camera Monitor** → click **Load** (initializes AI models), then **Start**
+3. Go to **Camera Monitor** → click **Load** (wait 30–40s for models to load in background), then **Start**
 4. Recognized faces appear with name and confidence score overlaid on the live feed
 
 ### Registration Workflow
 
-Each person requires 3 angle captures before committing. The checklist on the right tracks progress. On **Commit**:
+Each person requires 3 angle captures. On **Commit**:
 - Images are saved to `dataset/images/`
 - `info.csv` is updated with person metadata
-- FaceNet embeddings are generated and stored in `all_embeddings.npz`
+- FaceNet embeddings are stored in `all_embeddings.npz`
 - A unique ID (e.g., `P001`, `P002`) is auto-assigned
 
 ---
 
 ## Application Screens
 
+### Login *(New)*
+Firebase-backed authentication dialog. Supports login, sign-up, and password reset. Defers Firebase SDK initialization by 100ms so the window renders before any network call.
+
 ### Dashboard
-Central hub showing 6 stat cards (total persons, embeddings, unique embeddings, original images, face images, database size) and a persons table with safe remove functionality. Refreshes every 10 seconds. All deletions run in a background thread to keep the UI responsive.
+Central hub showing 6 stat cards (total persons, embeddings, unique embeddings, original images, face images, database size) and a persons table with safe remove functionality. Refreshes every 10 seconds. All deletions run in a background thread.
 
 ### Camera Monitor
-Live grid of camera feeds. Click any thumbnail to enlarge it in the right panel. A detection list below the controls shows real-time recognition results across all active cameras, including confidence scores.
+Live grid of camera feeds. Click any thumbnail to enlarge it in the right panel. A detection list shows real-time recognition results across all cameras with confidence scores. Clicking **Load** spawns `ModelLoaderThread` on a background CPU core — UI stays fully interactive during the 30–40s model load; a success message appears when ready.
 
 ### Registration
-Guided enrollment with live camera preview. Captures 3 face angles, validates with MTCNN before storing, and shows a progress checklist. Blocks commit until all 3 angles are captured.
+Guided enrollment with live camera preview. Captures 3 face angles, validates with MTCNN before storing, and shows a progress checklist.
 
 ### Settings
-Configure camera device IDs (comma-separated, e.g., `0,1,2`). Changes persist to `camera_config.ini` and take effect on next load.
+Configure camera device IDs (comma-separated). Changes persist to `camera_config.ini`.
 
 ---
 
@@ -227,18 +291,23 @@ Key settings in `frontend/config.py`:
 
 | Issue | Likely Cause | Fix |
 |-------|-------------|-----|
-| "No camera found" on Load | Camera not detected | Run `ls /dev/video*` on Linux; check USB connection |
+| "Invalid email or password" | Wrong credentials or unregistered email | Use Sign Up first, or check Firebase Console → Authentication |
+| Login screen briefly hangs | Firebase SDK initializing | Normal on first launch; faster on subsequent logins |
+| Load takes 30–40 seconds | MTCNN + FaceNet loading in background thread | Expected — UI stays responsive; wait for the ✅ success message |
+| "No camera found" on Start | Camera not detected | Run `ls /dev/video*` on Linux; check USB connection |
 | "Failed to initialize MTCNN" | PyTorch not installed or GPU error | Run `pip install torch torchvision` or use CPU fallback |
 | "CSV file not found" | Dataset folder missing | Create dataset structure or extract `dummy_dataset.zip` |
 | Registration hangs | Face detection timeout | Ensure face is clearly visible in good lighting |
 | Settings not persisting | Config file permissions | Check write permissions on `backend/camera_config.ini` |
+| Password reset email missing | Wrong email or spam filter | Check spam folder; verify email is registered in Firebase |
 
 ---
 
 ## Performance Tips
 
-- **Enable GPU**: Install CUDA + cuDNN for significantly faster face detection
-- **Limit cameras**: Up to 4 simultaneous streams recommended for optimal performance
+- **Enable GPU**: Install CUDA + cuDNN for significantly faster model loading and face detection
+- **Background loading**: `ModelLoaderThread` keeps the UI fully responsive during the 30–40s load — navigate other pages while it initializes
+- **Limit cameras**: Up to 4 simultaneous streams recommended
 - **Adjust threshold**: Increase to 90%+ for stricter matching (fewer false positives)
 - **Reduce resolution**: Use 480p instead of 1080p for smoother streaming on slower hardware
 
@@ -252,11 +321,15 @@ Key settings in `frontend/config.py`:
 - [ ] Alert system for unrecognized persons
 - [ ] Database backup & restoration
 - [ ] REST API for external integration
-- [ ] Multi-user authentication
+- [ ] Role-based access control (admin vs viewer)
+- [x] ~~Multi-user authentication~~ *(Firebase Email/Password — v1.1.0)*
 
 ---
 
 ## Screenshots
+
+### Login Page
+![Login](1-documentations/login_page.png)
 
 ### Dashboard
 ![Dashboard](1-documentations/dashboard.png)
@@ -272,6 +345,17 @@ Key settings in `frontend/config.py`:
 
 ---
 
-## Author
+## Version History & Changelog
 
-**Vivek Avhad** · Version 1.0.0 · MIT License
+| Version | Date | Key Updates |
+|:---:|:---|:---|
+| **2.1.0** | June 2026 | **Security & AI Optimization**<br>• Integrated Firebase authentication and secure login/logout routing<br>• Implemented `ModelLoaderThread` (QThread) to load heavy PyTorch models on a background CPU core, keeping the UI fully responsive during the 30–40s initialization<br>• Fixed UI freeze caused by GIL contention between PyTorch and PySide6 on model load |
+| **2.0.0** | May 2026 | **Desktop GUI Overhaul**<br>• Removed legacy web frontend and transitioned to a native PySide6 desktop UI<br>• Built dedicated UI pages: Camera Monitoring, Registration, and a functional Dashboard |
+| **1.0.0** | Sep 2025 | **Initial Core & Web Release**<br>• Established core face recognition backend using MTCNN and FaceNet<br>• Implemented parallel processing for camera streams<br>• Created the first web-based frontend interface |
+
+---
+
+**Last Updated**: June 12, 2025
+**Version**: 1.1.0
+**Author**: Vivek Avhad
+**License**: MIT

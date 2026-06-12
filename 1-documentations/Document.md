@@ -21,6 +21,7 @@
 
 This is a **professional-grade face recognition surveillance system** built as a desktop application. It provides a modern PySide6-based GUI that integrates with powerful backend services for:
 
+- **Firebase Authentication** with secure login, sign-up, and password reset
 - **Real-time multi-camera monitoring** with live face detection overlay
 - **Person registration** with 3-angle face capture (front, left, right)
 - **Face recognition** using deep learning embeddings (FaceNet with InceptionResnet-V1)
@@ -29,6 +30,7 @@ This is a **professional-grade face recognition surveillance system** built as a
 
 The system uses:
 - **Frontend**: PySide6 (Qt for Python) with a modern dark theme
+- **Authentication**: Firebase (Pyrebase4) — email/password login, sign-up, password reset
 - **Camera Management & Image Processing**: OpenCV (cv2) for frame capture, resizing, preprocessing, and drawing overlays
 - **Face Detection**: MTCNN (Multi-task Cascaded Convolutional Networks)
 - **Face Recognition**: FaceNet InceptionResnet-V1 with embeddings
@@ -39,31 +41,37 @@ The system uses:
 
 ## Core Features
 
-### 1. **Real-Time Camera Monitoring**
+### 1. **Firebase Authentication System**
+- Secure email/password login via Firebase Authentication
+- New user sign-up with password validation
+- Forgot password → email reset link flow
+- Persistent login loop: app restarts the login screen cleanly on logout
+
+### 2. **Real-Time Camera Monitoring**
 - Multi-camera support with simultaneous stream processing
 - Configurable grid layouts (2×2, 1×4, 2×3)
 - Individual camera feed enlargement with detailed info
 - Live detection overlay showing recognized faces and confidence scores
 
-### 2. **Person Registration System**
+### 3. **Person Registration System**
 - Capture 3 face angles per person (front, left, right) for robust recognition
 - Automatic face detection and validation before storing
 - Incremental embedding generation for new registrations
 - Consistent CSV/image file management
 
-### 3. **Face Recognition Engine**
+### 4. **Face Recognition Engine**
 - Cosine similarity-based face matching against known embeddings
 - Confidence threshold filtering (default: 85%)
 - Real-time embedding generation for captured faces
 - Platform-aware camera backend selection (Windows/Linux/macOS)
 
-### 4. **Database & Dataset Management**
+### 5. **Database & Dataset Management**
 - Automatic dataset consistency validation on startup
 - Self-healing mechanism for orphaned CSV rows or missing images
 - Comprehensive statistics: person count, embedding count, image counts, database size
 - Safe person deletion with cascading removal of all related data
 
-### 5. **System Statistics Dashboard**
+### 6. **System Statistics Dashboard**
 - Total registered persons, embeddings, and images at-a-glance
 - Database size and file structure information
 - Persons table with removal capability
@@ -78,20 +86,34 @@ The system uses:
 ```
 run_frontend.py (Entry Point)
     ↓
+Login Loop
+    ↓
+frontend/pages/login_page.py (LoginPage — Firebase Authentication)
+    ├── Sign In   → accept()   → MainWindow
+    ├── Sign Up   → creates account, prompts login
+    └── Forgot PW → sends reset email via Firebase
+    ↓
 frontend/main_window.py (MainWindow)
     ├── TopBarWidget (Time & system info)
-    ├── SidebarWidget (Navigation)
+    ├── SidebarWidget (Navigation + Logout button)
     └── QStackedWidget (Page switching)
         ├── DashboardPage (Statistics)
         ├── CameraMonitorPage (Live monitoring)
+        │       ↓  [User clicks Load]
+        │   ModelLoaderThread (QThread — background CPU core)
+        │       ↓  finished_loading signal
+        │   MultiCameraManager ready → Start button unlocked
         ├── RegistrationPage (Person registration)
         └── SettingsPage (Configuration)
+    ↓
+[Logout clicked] → window.logout_var = True → LoginPage re-shown
+[Window X closed] → sys.exit(0)
 ```
 
 ### Backend Processing
 
-1. **Dataset Manager** initializes on startup, validates all CSV files and image folders
-2. **Multi-Camera Manager** loads known face embeddings from the NPZ database
+1. **ModelLoaderThread** (QThread) initializes `MultiCameraManager` in the background when the user clicks Load — MTCNN, InceptionResnet-V1 models, and the face database all load on a separate CPU core, keeping the UI fully responsive during the 30–40 second wait
+2. **Dataset Manager** validates all CSV files and image folders on startup
 3. **OpenCV (cv2)** captures raw video frames from camera hardware using platform-aware backends:
    - Reads frames continuously: `ret, frame = cap.read()`
    - Resizes frames: `cv2.resize(frame, (640, 480))`
@@ -114,8 +136,9 @@ frontend/
 ├── config.py               # Central configuration (colors, sizes, thresholds)
 ├── utils.py                # Shared utilities and helpers
 ├── pages/                  # Page/Screen implementations
+│   ├── login_page.py       # Firebase login/signup/reset dialog (NEW)
 │   ├── dashboard_page.py   # Statistics & person management (READ-ONLY)
-│   ├── camera_page.py      # Multi-camera monitoring & real-time detection
+│   ├── camera_page.py      # Multi-camera monitoring, ModelLoaderThread, real-time detection
 │   ├── registration_page.py # Person registration workflow
 │   └── settings_page.py    # Configuration & camera setup
 └── widgets/                # Reusable UI components
@@ -130,6 +153,7 @@ frontend/
 ```
 backend/
 ├── src/
+│   ├── login_setup.py              # FirebaseAuth class — wraps Pyrebase4 (NEW)
 │   ├── dataset_manager.py          # Dataset validation & auto-repair
 │   ├── multi_camera_manager.py     # Camera control & face recognition
 │   ├── person_registration.py      # Registration workflow & CSV management
@@ -148,39 +172,84 @@ backend/
 
 ## Main Screens & UI Components
 
+### 0. **Login Page** - Firebase Authentication *(New)*
+
+**Purpose**: Secure gateway to the application. Shown on every fresh start and every logout.
+
+**Layout**:
+```
+┌─────────────────────────────────────────────────────┐
+│              (Dark background #0a0e27)            │
+│                                                     │
+│         ┌───────────────────────────────┐           │
+│         │       System Access           │           │
+│         │                               │           │
+│         │  Email:    [________________] │           │
+│         │  Password: [________________] │           │
+│         │                               │           │
+│         │  [Status / Error message]     │           │
+│         │                               │           │
+│         │  [ Login ]     [ Sign Up ]    │           │
+│         │                               │           │
+│         │       Forgot Password?        │           │
+│         └───────────────────────────────┘           │
+└─────────────────────────────────────────────────────┘
+```
+
+**Buttons & Actions**:
+
+| Button | Action | Outcome |
+|--------|--------|---------|
+| **Login** | `FirebaseAuth.sign_in(email, pw)` | Opens MainWindow on success; shows error on failure |
+| **Sign Up** | `FirebaseAuth.sign_up(email, pw)` | Creates account; prompts user to log in |
+| **Forgot Password?** | `FirebaseAuth.reset_password(email)` | Sends Firebase reset email; confirms on screen |
+
+**Status Messages** (inline, color-coded):
+- 🔵 "Authenticating..." / "Creating account..." — progress feedback
+- 🟢 "Account created! You can now log in." — success
+- 🔴 "Invalid email or password" / "Error creating account." — failure
+
+**Behind the Scenes**:
+- `LoginPage` is a `QDialog` — `login.exec()` blocks the main loop until accepted or rejected
+- Firebase initialization (`pyrebase.initialize_app`) is deferred by 100ms via `QTimer.singleShot` so the login window renders before any network call
+- On successful login: `self.accept()` is called, which signals `main()` to open `MainWindow`
+- On window close (X button): `QDialog.Rejected` breaks the login loop and exits the app
+
+---
+
 ### 1. **Dashboard Page** - System Overview & Management
 
 **Purpose**: Central hub for monitoring system health and managing person records.
 
 **Layout**:
 ```
-┌─────────────────────────────────────────────────────┐
-│  System Statistics & Database Info              [+] │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│  │ 👥           │  │ 🧠           │  │ 🔗           │
-│  │ Total        │  │ Total        │  │ Unique       │
-│  │ Persons      │  │ Embeddings   │  │ Embeddings   │
-│  │ [Count]      │  │ [Count]      │  │ [Count]      │
-│  └──────────────┘  └──────────────┘  └──────────────┘
-│
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│  │ 📷           │  │ 👤           │  │ 💾           │
-│  │ Original     │  │ Face         │  │ Database     │
-│  │ Images       │  │ Images       │  │ Size         │
-│  │ [Count]      │  │ [Count]      │  │ [Size]       │
-│  └──────────────┘  └──────────────┘  └──────────────┘
-│
-│  ┌──────────────────────────────────────────────────┐
-│  │ Registered Persons Table                         │
-│  ├──────────────────────────────────────────────────┤
-│  │ Sr.No | Name         | ID    | Images | Actions  │
-│  │ 1     | John Doe     | P001  | 3      | Remove   │
-│  │ 2     | Sarah Smith  | P002  | 3      | Remove   │
-│  │ ...                                              │
-│  └──────────────────────────────────────────────────┘
-└─────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│  System Statistics & Database Info              [+]    │
+├────────────────────────────────────────────────────────┤
+│                                                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │ 👥           │  │ 🧠           │  │ 🔗           │  │
+│  │ Total        │  │ Total        │  │ Unique       │  │
+│  │ Persons      │  │ Embeddings   │  │ Embeddings   │  │ 
+│  │ [Count]      │  │ [Count]      │  │ [Count]      │  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  │
+│                                                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
+│  │ 📷           │  │ 👤           │  │ 💾           │  │
+│  │ Original     │  │ Face         │  │ Database     │  │
+│  │ Images       │  │ Images       │  │ Size         │  │
+│  │ [Count]      │  │ [Count]      │  │ [Size]       │  │
+│  └──────────────┘  └──────────────┘  └──────────────┘  │ 
+│                                                        │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │ Registered Persons Table                         │  │
+│  ├──────────────────────────────────────────────────┤  │
+│  │ Sr.No | Name         | ID    | Images | Actions  │  │
+│  │ 1     | John Doe     | P001  | 3      | Remove   │  │
+│  │ 2     | Sarah Smith  | P002  | 3      | Remove   │  │
+│  │ ...                                              │  │
+│  └──────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────┘
 ```
 
 **Statistics Cards** (6 cards in 2×3 grid):
@@ -217,15 +286,15 @@ backend/
 │ [Stop]          │  │                           │    │
 │                 │  │  ENLARGED FEED (800×420)  │    │
 │ ┌─────────────┐ │  │                           │    │
-│ │ CAM 1       │ │  │ Shows selected camera's   │    │
-│ │ (thumbnail) │ │  │ live feed + overlay       │    │
-│ │             │ │  │                           │    │
-│ └─────────────┘ │  └───────────────────────────┘    │
-│ ┌─────────────┐ │                                   │
-│ │ CAM 2       │ │  Camera Details:                  │
-│ │ (thumbnail) │ │  Name: Gate A - Entrance          │
-│ │             │ │  FPS: 30                          │
-│ └─────────────┘ │  Status: Active                   │
+│ │ CAM 1       │ │  └───────────────────────────┘    │
+│ │ (thumbnail) │ │                                   │
+│ │             │ │  Camera Details:                  │
+│ └─────────────┘ │  Name: Gate A - Entrance          │
+│ ┌─────────────┐ │  FPS: 30                          │
+│ │ CAM 2       │ │  Status: Active                   │
+│ │ (thumbnail) │ │                                   │
+│ │             │ │                                   │
+│ └─────────────┘ │                                   │
 │                 │                                   │
 │ Live Detections │                                   │
 │ ├─ John Doe     │                                   │
@@ -237,7 +306,7 @@ backend/
 ```
 
 **Control Buttons**:
-- **Load**: Initializes `MultiCameraManager`, loads embeddings, prepares AI models (MTCNN & InceptionResnet-V1)
+- **Load**: Spawns `ModelLoaderThread` on a separate CPU core — shows "⏳ Loading AI Models... Please wait. This may take 30–40 seconds." while MTCNN + InceptionResnet-V1 + face database load in the background. UI stays fully interactive. On completion, emits `finished_loading` signal → shows "✅ AI Models Loaded Successfully! You can now click Start." and unlocks the Start button.
 - **Start**: Begins camera capture threads; displays live video streams
 - **Stop**: Stops all camera threads and releases hardware resources
 - **View Mode Combo**: Switch between 2×2, 1×4, or 2×3 grid layouts dynamically
@@ -313,7 +382,7 @@ backend/
 
 4. **[Clear Form]**: Resets all inputs, clears captured images, resets progress
 
-5. **[Commit]**: 
+5. **[Commit]**:
    - Validates all 3 angles are captured
    - Saves images to `backend/dataset/images/`
    - Updates `info.csv` with person details
@@ -384,9 +453,17 @@ backend/
 - **Camera Monitor**: Multi-camera surveillance
 - **Registration**: Person enrollment workflow
 - **Settings**: System configuration
-- **[Logout]** (bottom): Closes application (future expansion)
+- **[Logout]** (bottom): Sets `logout_var = True`, closes `MainWindow`, and returns to the `LoginPage` — AI models stay loaded in memory
 
 **Active State**: Highlighted button shows current page with left cyan border + color change
+
+### Login Buttons
+
+| Button | Action | Purpose |
+|--------|--------|---------|
+| **Login** | Firebase sign-in | Authenticates with email + password; opens app on success |
+| **Sign Up** | Firebase create user | Registers new account; does not auto-login |
+| **Forgot Password?** | Firebase reset email | Sends password reset link to entered email |
 
 ### Dashboard Buttons
 
@@ -399,7 +476,7 @@ backend/
 
 | Button | Function | Details |
 |--------|----------|---------|
-| **Load** | Initialize system | Loads embeddings, prepares MTCNN & InceptionResnet models |
+| **Load** | Start `ModelLoaderThread` | Loads MTCNN + FaceNet in background (30–40s); UI stays responsive; shows status messages |
 | **Start** | Begin capture | Starts all camera threads, displays frames |
 | **Stop** | End capture | Stops threads, releases camera hardware |
 | **View Mode** (Dropdown) | Switch layout | 2×2, 1×4, 2×3 grid options |
@@ -426,7 +503,107 @@ backend/
 
 ## Key Logic & Implementation Highlights
 
-### 1. **DatasetManager - Automatic Consistency Validation**
+### 1. **FirebaseAuth - Authentication Backend** *(New)*
+
+**Location**: `backend/src/login_setup.py`
+
+**What it does**: Wraps Pyrebase4 to provide clean methods for the login page.
+
+```python
+class FirebaseAuth:
+    def __init__(self):
+        self.firebase = pyrebase.initialize_app(firebaseConfig)
+        self.auth = self.firebase.auth()
+
+    def sign_in(self, email, password) -> user | None
+    def sign_up(self, email, password) -> user | None
+    def reset_password(self, email) -> bool
+```
+
+**Firebase project**: Connected to `surveillance-system-98193` on Firebase.
+
+**Error handling**: All methods catch exceptions and return `None`/`False` on failure — the `LoginPage` translates this into a user-facing message.
+
+---
+
+### 2. **Login Loop & Logout Flow** *(New)*
+
+**Location**: `frontend/main_window.py` → `main()`
+
+**How it works**: `main()` runs a `while` loop — each iteration shows the login dialog. On successful login, `MainWindow` is created and `app.exec()` blocks until the window closes. The loop then checks `logout_var` to decide whether to show the login screen again or exit.
+
+```python
+def main():
+    app = QApplication(sys.argv)
+
+    logout_var = True
+    while logout_var:
+        login = LoginPage()
+        if login.exec() == QDialog.Accepted:
+            logout_var = False
+            window = MainWindow()
+            window.show()
+            app.exec()           # blocks here until window closes
+            if window.logout_var:
+                logout_var = True  # logout clicked → re-show login
+            else:
+                break              # X button → exit
+        else:
+            break                  # X on login screen → exit
+
+    sys.exit(0)
+```
+
+**Logout mechanism** (`main_window.py` → `handle_logout`):
+```python
+def handle_logout(self):
+    self.logout_var = True   # signal to main() loop
+    self.close()             # causes app.exec() to return
+```
+
+**Result**:
+- Logout → re-login: shows login screen cleanly with no restart required
+- Window X button: clean `sys.exit(0)`
+
+---
+
+### 3. **ModelLoaderThread - Non-Blocking AI Initialization**
+
+**Location**: `frontend/pages/camera_page.py`
+
+**Purpose**: MTCNN + InceptionResnet-V1 take 30–40 seconds to load. Running this on the main thread would freeze the UI. `ModelLoaderThread` runs the entire initialization on a **separate CPU core** via `QThread`, completely bypassing the UI thread and GIL contention.
+
+```python
+class ModelLoaderThread(QThread):
+    """Loads heavy PyTorch models on a separate CPU core to prevent UI freezing"""
+    finished_loading = Signal(object)
+
+    def run(self):
+        # Runs on a background thread — UI stays fully responsive
+        from backend.src.multi_camera_manager import MultiCameraManager
+        manager = MultiCameraManager()          # loads MTCNN + FaceNet + face DB
+        self.finished_loading.emit(manager)     # signals UI thread when done
+```
+
+**Load button flow**:
+```python
+def _load_button(self):
+    self._show_temporary_warning("⏳ Loading AI Models... Please wait. This may take 30-40 seconds.")
+    self.loader_thread = ModelLoaderThread()
+    self.loader_thread.finished_loading.connect(self._on_models_loaded)
+    self.loader_thread.start()
+
+def _on_models_loaded(self, manager):
+    """Runs automatically the exact millisecond PyTorch is ready"""
+    self.manager = manager
+    self._show_temporary_warning("✅ AI Models Loaded Successfully! You can now click Start.")
+```
+
+**Why this works**: `QThread.run()` executes on a different OS thread. PyTorch model loading is largely C++ / native code that releases the GIL — it runs in true parallel with the Qt event loop. The `finished_loading` signal is queued across the thread boundary and safely delivers the manager object to the main thread only after loading is complete.
+
+---
+
+### 4. **DatasetManager - Automatic Consistency Validation**
 
 **Location**: `backend/src/dataset_manager.py`
 
@@ -436,12 +613,10 @@ backend/
 ```python
 def validate_information(self):
     # Check 1: CSV file consistency
-    # All IDs in face_info.csv should match info.csv and embeddings.csv
     if len(face_info_df) != len(info_df) or len(info_df) != len(embeddings_df):
         raise ValidationError(101)
-    
+
     # Check 2: Folder consistency
-    # Count of files in images/ and faces/ must match CSV row count
     if len(image_files) != len(info_df):
         raise ValidationError(104)
 ```
@@ -450,22 +625,19 @@ def validate_information(self):
 ```python
 def fix_issues(self, error_codes):
     if 101 in errors:  # CSV mismatch
-        # Keep only rows where ID exists in info.csv (source of truth)
         self.face_info_df = self.face_info_df[self.face_info_df['ID'].isin(valid_ids)]
-    
+
     if 104 in errors:  # Missing images
-        # Remove image files for IDs not in CSV
         for img_file in images/:
-            person_id = extract_id_from_filename(img_file)
-            if person_id not in valid_ids:
+            if extract_id(img_file) not in valid_ids:
                 os.remove(img_file)
 ```
 
-**Result**: App starts with guaranteed data consistency—no crashes from file mismatches.
+**Result**: App starts with guaranteed data consistency — no crashes from file mismatches.
 
 ---
 
-### 2. **MultiCameraManager - Parallel Face Recognition**
+### 5. **MultiCameraManager - Parallel Face Recognition**
 
 **Location**: `backend/src/multi_camera_manager.py`
 
@@ -486,51 +658,34 @@ class CameraStream:
             ret, frame = self.cap.read()
             if ret:
                 try:
-                    self.frame_queue.put(frame, block=False)  # Non-blocking add
+                    self.frame_queue.put(frame, block=False)
                 except queue.Full:
-                    # Queue full, drop oldest frame to prevent lag
+                    # Drop oldest frame to prevent lag
                     self.frame_queue.get(block=False)
 ```
-
-**Key Benefits**:
-- Each camera captures independently (doesn't block others)
-- Queue prevents memory bloat (max 2 frames per camera)
-- Oldest frame dropped if processing is slow (maintains responsiveness)
 
 **Face Recognition Pipeline**:
 ```python
 for camera_name, camera in self.cameras.items():
     frame = camera.get_frame()
-    
-    # Detect faces in frame
     faces, _ = self.mtcnn.detect(frame)
-    
+
     if faces is not None:
         for face_box in faces:
-            # Crop face region
-            face_img = frame[y1:y2, x1:x2]
-            
-            # Generate embedding
             embedding = self.model(preprocess(face_img))
-            embedding = embedding / np.linalg.norm(embedding)  # Normalize
-            
-            # Match against known embeddings
+            embedding = embedding / np.linalg.norm(embedding)
+
             similarities = cosine_similarity([embedding], self.known_embeddings)
             best_match_idx = np.argmax(similarities)
             confidence = similarities[0][best_match_idx] * 100
-            
+
             if confidence >= THRESHOLD:
                 name = self.known_names[best_match_idx]
-                self.recognition_results[camera_name].append({
-                    'name': name,
-                    'confidence': confidence,
-                    'box': face_box
-                })
 ```
 
 ---
 
-### 3. **PersonRegistrationSystem - Incremental Registration**
+### 6. **PersonRegistrationSystem - Incremental Registration**
 
 **Location**: `backend/src/person_registration.py`
 
@@ -547,96 +702,44 @@ Step 4: Generate Embeddings (InceptionResnet-V1)
 Step 5: Append to embeddings CSV & NPZ
 ```
 
-**ID Generation Strategy** (Consistent):
+**ID Generation Strategy**:
 ```python
 def get_next_person_id(self):
-    # Find max ID number from existing CSV
-    max_id = 0
-    for row in csv_data:
-        if row['ID'] starts with 'P':
-            num = int(row['ID'][1:])
-            max_id = max(max_id, num)
-    
+    max_id = max(int(row['ID'][1:]) for row in csv_data)
     return f"P{(max_id + 1):03d}"  # P001, P002, P003...
-```
-
-**Image Naming** (3 angles per person):
-```
-Person number 3, captured angles:
-├── p3_front.jpeg  → info.csv entry 1
-├── p3_left.jpeg   → info.csv entry 2
-└── p3_right.jpeg  → info.csv entry 3
-```
-
-**CSV Entry** (One row per image):
-```csv
-Sr No, Name,       ID,   Image Path
-1,     John Doe,   P001, dataset/images/p1_front.jpeg
-2,     John Doe,   P001, dataset/images/p1_left.jpeg
-3,     John Doe,   P001, dataset/images/p1_right.jpeg
 ```
 
 **Embedding Storage**:
 ```python
-# all_embeddings.npz (binary format for efficiency)
-npz_file = {
-    "P001_front": [0.123, 0.456, ...],  # 512-dim vector
-    "P001_left":  [0.124, 0.457, ...],
-    "P001_right": [0.125, 0.458, ...]
-}
-
-# embeddings.csv (human-readable metadata)
-ID,    Name,       Embedding Key,  Timestamp
-P001,  John Doe,   P001_front,     2024-06-04 10:30:45
-P001,  John Doe,   P001_left,      2024-06-04 10:30:46
-P001,  John Doe,   P001_right,     2024-06-04 10:30:47
+# all_embeddings.npz (binary format)
+{ "P001_front": [0.123, 0.456, ...],   # 512-dim vector
+  "P001_left":  [0.124, 0.457, ...],
+  "P001_right": [0.125, 0.458, ...] }
 ```
 
 ---
 
-### 4. **StatsManager - Read-Only Statistics Computation**
+### 7. **StatsManager - Read-Only Statistics Computation**
 
 **Location**: `backend/src/stats_manager.py`
 
-**Design**: Never modifies data—only reads and computes metrics for dashboard display.
+**Design**: Never modifies data — only reads and computes metrics for dashboard display.
 
-**Key Metrics Computed**:
 ```python
 def get_all_statistics(self):
     return {
-        'person_count': len(info_df['ID'].unique()),      # Unique persons
-        'embeddings_count': len(embeddings_df),            # Total embeddings
+        'person_count': len(info_df['ID'].unique()),
+        'embeddings_count': len(embeddings_df),
         'unique_embeddings': len(embeddings_df['ID'].unique()),
-        'total_images': len(info_df),                      # Total image entries
+        'total_images': len(info_df),
         'face_images': len([f for f in faces_dir if is_file(f)]),
-        'database_info': {
-            'total_size': format_bytes(size_sum),
-            'folders': {...},
-            'last_modified': timestamp
-        }
-    }
-```
-
-**File Size Calculation** (Efficient):
-```python
-def get_database_info(self):
-    # Calculate sizes for each folder
-    faces_size = sum(os.path.getsize(f) for f in faces_dir)
-    images_size = sum(os.path.getsize(f) for f in images_dir)
-    embeddings_size = os.path.getsize(all_embeddings_npz)
-    
-    return {
-        'folders': {
-            'faces': {'count': 123, 'size': '45.2 MB'},
-            'images': {'count': 41, 'size': '52.1 MB'},
-            'embeddings': {'count': 2, 'size': '8.3 MB'}
-        }
+        'database_info': { 'total_size': format_bytes(size_sum), ... }
     }
 ```
 
 ---
 
-### 5. **MainWindow - Page Navigation with QStackedWidget**
+### 8. **MainWindow - Page Navigation with QStackedWidget**
 
 **Location**: `frontend/main_window.py`
 
@@ -644,152 +747,67 @@ def get_database_info(self):
 
 ```python
 class MainWindow(QMainWindow):
-    def __init__(self):
-        # Create pages
+    def __init__(self, camera_manager):       # ← receives pre-loaded manager
         self.pages = {
             "dashboard": DashboardPage(),
-            "camera": CameraMonitorPage(),
+            "camera": CameraMonitorPage(camera_manager=camera_manager),  # ← injected
             "registration": RegistrationPage(),
             "settings": SettingsPage(),
         }
-        
-        # Add all to stacked widget (all in memory)
         self.stacked_widget = QStackedWidget()
         for key, page in self.pages.items():
             self.stacked_widget.addWidget(page)
-    
+
     def show_page(self, page_name):
-        # Instant switching (no loading)
         page_index = list(self.pages.keys()).index(page_name)
         self.stacked_widget.setCurrentIndex(page_index)
 ```
 
-**Advantages**:
-- Instant page switching (no lag)
-- All pages run in background (e.g., stats refresh continues)
-- Memory efficient for small number of pages
-
 ---
 
-### 6. **Threading for Responsive UI**
+### 9. **Threading for Responsive UI**
 
 **Worker Thread Pattern** (Dashboard → Remove Person):
-
 ```python
 class RemovePersonWorker(QThread):
     worker_finished = Signal(bool, str)
-    
+
     def run(self):
-        # Long operation on background thread
         RemovePerson(personID, dataset_path)
         self.worker_finished.emit(True, "Success message")
-
-# In dashboard:
-self.remove_thread = RemovePersonWorker(person_id, dataset_path)
-self.remove_thread.worker_finished.connect(self.on_remove_complete)
-self.remove_thread.start()  # Non-blocking!
 ```
 
-**Result**: UI never freezes, user can continue navigating/viewing stats.
+**Result**: UI never freezes — user can continue navigating/viewing stats during deletions.
 
 ---
 
-### 7. **OpenCV - Core Image Processing & Frame Capture**
+### 10. **OpenCV - Core Image Processing & Frame Capture**
 
 **Location**: `backend/src/multi_camera_manager.py` (CameraStream class)
-
-**Critical Role in Pipeline**:
-
-OpenCV is the foundation of the entire vision pipeline. Every frame that gets processed must first be captured and prepared by OpenCV.
 
 **Frame Capture**:
 ```python
 def _capture_loop(self):
     while self.is_running:
-        # OpenCV reads raw frames from camera hardware
-        ret, frame = self.cap.read()
-        
+        ret, frame = self.cap.read()   # NumPy array (480, 640, 3) BGR
         if ret:
-            # frame is a NumPy array (480, 640, 3) in BGR format
             self.last_frame = frame.copy()
             self.frame_queue.put(frame, block=False)
 ```
 
-**Frame Preprocessing** (Before Face Detection):
-```python
-def start(self):
-    self.cap = cv2.VideoCapture(camera_id)
-    
-    # Set resolution and properties for optimal performance
-    self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)   # Width
-    self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)  # Height
-    self.cap.set(cv2.CAP_PROP_FPS, 30)            # Frames per second
-    
-    # Platform-specific camera backend
-    if platform == "Windows":
-        self.cap = cv2.VideoCapture(camera_id, cv2.CAP_DSHOW)
-    elif platform == "Linux":
-        self.cap = cv2.VideoCapture(camera_id, cv2.CAP_V4L2)
-```
-
 **Drawing Detection Overlays**:
 ```python
-# After MTCNN detection and face recognition, OpenCV draws results
-def draw_detections(frame, detections, matches):
-    for face_box, name, confidence in matches:
-        x1, y1, x2, y2 = face_box
-        
-        # Draw bounding box
-        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        
-        # Put text label with person name and confidence
-        label = f"{name} ({confidence:.1f}%)"
-        cv2.putText(frame, label, (x1, y1-10),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-    
-    return frame
+cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+cv2.putText(frame, f"{name} ({confidence:.1f}%)", (x1, y1-10),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 ```
 
-**Key Responsibilities**:
-1. **Frame Acquisition**: Continuously reads video frames from hardware cameras
-2. **Format Conversion**: Converts between BGR (OpenCV), RGB (display), and model input formats
-3. **Resizing**: Scales frames to optimal size for processing (e.g., 640×480)
-4. **Preprocessing**: Normalizes pixel values for deep learning models
-5. **Visualization**: Draws bounding boxes, text labels, and confidence scores
-6. **Performance Optimization**: Discards frames if processing is slow (queue management)
-
-**Integration Points**:
-- **Input**: Raw camera frames in BGR format (NumPy arrays)
-- **Output**: Processed frames with detection overlays for UI display
-- **To MTCNN**: Frames passed for face detection
-- **From Recognition**: Detection results used to draw overlays back on frames
-
-**Performance Notes**:
-- OpenCV operations are optimized in C++ (faster than pure Python)
-- Frame queue prevents lag by dropping old frames if processing is slow
-- Resolution set to 640×480 balances accuracy and speed
-- Platform-aware backends ensure compatibility across OS
-
----
-
-### 8. **Platform-Aware Camera Backend**
-
-**Location**: `backend/src/multi_camera_manager.py` → `CameraStream.start()`
-
-**Dynamic Backend Selection** (Windows/Linux/macOS):
+**Platform-Aware Backend Selection**:
 ```python
-def start(self):
-    system = platform.system()
-    
-    if system == "Windows":
-        self.cap = cv2.VideoCapture(camera_id, cv2.CAP_DSHOW)
-    elif system == "Linux":
-        self.cap = cv2.VideoCapture(camera_id, cv2.CAP_V4L2)
-    elif system == "Darwin":  # macOS
-        self.cap = cv2.VideoCapture(camera_id, cv2.CAP_AVFOUNDATION)
+if system == "Windows":  cap = cv2.VideoCapture(id, cv2.CAP_DSHOW)
+elif system == "Linux":  cap = cv2.VideoCapture(id, cv2.CAP_V4L2)
+elif system == "Darwin": cap = cv2.VideoCapture(id, cv2.CAP_AVFOUNDATION)
 ```
-
-**Why**: Different OSes use different camera drivers. This ensures compatibility.
 
 ---
 
@@ -800,16 +818,17 @@ FaceRecognitionSystem/
 │
 ├── 📄 README.md                          # This file
 ├── 🐍 run_frontend.py                    # Application entry point
-├── � requirements.txt                   # Python dependencies
+├── 📋 requirements.txt                   # Python dependencies
 │
 ├── 📁 frontend/                          # PySide6 GUI Application
-│   ├── 🐍 __init__.py                    # Package marker
-│   ├── 🐍 main_window.py                 # Main application window & page routing
+│   ├── 🐍 __init__.py
+│   ├── 🐍 main_window.py                 # Main window, login loop, logout handling
 │   ├── 🐍 config.py                      # Application configuration (colors, sizes, thresholds)
 │   ├── 🐍 utils.py                       # Shared utilities & helpers
 │   │
-│   ├── 📁 pages/                         # Application screens (pages)
+│   ├── 📁 pages/                         # Application screens
 │   │   ├── 🐍 __init__.py
+│   │   ├── 🐍 login_page.py              # Firebase login/signup/reset dialog [NEW]
 │   │   ├── 🐍 dashboard_page.py          # Statistics dashboard + person management
 │   │   ├── 🐍 camera_page.py             # Real-time multi-camera monitoring
 │   │   ├── 🐍 registration_page.py       # Person registration workflow
@@ -822,62 +841,53 @@ FaceRecognitionSystem/
 │   │   ├── 🐍 cards.py                   # Statistics cards & info panels
 │   │   └── 🐍 overlays.py                # Alerts, loading spinners, dialogs
 │   │
-│   ├── 📁 styles/                        # Stylesheets
-│   │   └── 🎨 dark_theme.qss             # Qt style sheet (dark theme)
-│   │
-│   └── 📁 rough/                         # Experimental/draft code (not used)
+│   └── 📁 styles/
+│       └── 🎨 dark_theme.qss             # Qt stylesheet (dark theme)
 │
-├── 📁 backend/                           # Python backend logic
-│   │
+├── 📁 backend/
 │   ├── ⚙️ camera_config.ini              # Camera configuration (device IDs, names)
 │   │
 │   ├── 📁 src/                           # Core business logic
+│   │   ├── 🐍 login_setup.py             # FirebaseAuth — Pyrebase4 wrapper [NEW]
 │   │   ├── 🐍 dataset_manager.py         # Dataset validation & auto-repair
 │   │   ├── 🐍 multi_camera_manager.py    # Multi-camera control & face recognition
 │   │   ├── 🐍 person_registration.py     # Person registration workflow
 │   │   └── 🐍 stats_manager.py           # Statistics computation (read-only)
 │   │
-│   └── 📁 dataset/                       # Face recognition database
+│   └── 📁 dataset/
 │       ├── 📄 info.csv                   # Master registry (ID, Name, Image Path)
 │       ├── 📄 face_info.csv              # Face metadata (quality, landmarks)
-│       │
 │       ├── 📁 images/                    # Original 3-angle captures
-│       │   ├── p1_front.jpeg             # Person 1 front
-│       │   ├── p1_left.jpeg              # Person 1 left
-│       │   ├── p1_right.jpeg             # Person 1 right
-│       │   └── ... (3 images per person)
-│       │
 │       ├── 📁 faces/                     # Processed cropped faces (MTCNN output)
-│       │   ├── P001_front_face.jpg       # Normalized face image
-│       │   └── ...
-│       │
-│       └── 📁 embeddings/                # Face embeddings & metadata
-│           ├── 📦 all_embeddings.npz     # Binary embeddings (512-dim vectors per face)
+│       └── 📁 embeddings/
+│           ├── 📦 all_embeddings.npz     # Binary embeddings (512-dim vectors)
 │           └── 📄 embeddings.csv         # Embedding metadata (ID, Name, Timestamp)
 │
-└── 🧪 test1.py, test2.py                # Development test scripts
+└── 🐍 run_frontend.py                    # Entry point
 ```
 
 ### File Descriptions
 
 **Frontend Core**:
-- `main_window.py`: Initializes QMainWindow, builds layout (topbar + sidebar + content), manages page switching
+- `main_window.py`: Initializes QMainWindow, builds layout, manages page switching and the login/logout loop
 - `config.py`: Centralized configuration (APP_VERSION, colors, thresholds, sizes)
 - `utils.py`: Shared functions (image conversion, data formatting, etc.)
 
 **Frontend Pages**:
+- `login_page.py`: Firebase authentication dialog — login, sign-up, forgot password *(New)*
 - `dashboard_page.py`: Statistics display (read-only), person removal (background thread)
 - `camera_page.py`: Multi-camera grid, stream selection, detection overlay
 - `registration_page.py`: Guided person enrollment (3-angle capture + commit)
 - `settings_page.py`: Camera ID configuration, config file management
 
 **Frontend Widgets**:
-- `sidebar.py`: Navigation menu with active button highlighting
+- `sidebar.py`: Navigation menu with active button highlighting and logout button
 - `topbar.py`: System time display, status indicators
 - `cards.py`: Statistics card components with icons and values
 - `overlays.py`: Alert boxes, loading spinners, confirmation dialogs
 
 **Backend Core**:
+- `login_setup.py`: `FirebaseAuth` class — wraps Pyrebase4 for sign-in, sign-up, password reset *(New)*
 - `dataset_manager.py`: Validates CSV/image consistency on startup, auto-repairs orphaned data
 - `multi_camera_manager.py`: Controls multiple camera threads, orchestrates face detection & recognition
 - `person_registration.py`: Handles image saving, CSV updates, face detection, embedding generation
@@ -897,7 +907,8 @@ FaceRecognitionSystem/
 - **Python 3.8+**
 - **Ubuntu/Linux** (or compatible OS)
 - **Camera hardware** (built-in or USB webcam)
-- **GPU** (CUDA-enabled NVIDIA card recommended for faster face detection; CPU fallback available)
+- **GPU** (CUDA-enabled NVIDIA card recommended; CPU fallback available)
+- **Firebase project** with Email/Password authentication enabled
 
 ### Step 1: Clone/Download Project
 ```bash
@@ -905,14 +916,12 @@ cd /path/to/FaceRecognitionSystem
 ```
 
 ### Step 2: Create Virtual Environment (Recommended)
-
 ```bash
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 ### Step 3: Install Dependencies
-
 ```bash
 pip install -r requirements.txt
 ```
@@ -922,25 +931,80 @@ This installs:
 - PyTorch (deep learning)
 - Facenet-pytorch (MTCNN + InceptionResnet-V1)
 - OpenCV (camera + image processing)
+- Pyrebase4 (Firebase authentication)
 - NumPy, Pandas (data handling)
 - Scikit-learn (similarity metrics)
-- And all other required packages
 
-### Step 4: Run the Application
+### Step 4: Firebase setup
 
+Create your own Firebase project and add credentials to `backend/src/login_setup.py`:
+
+**Step 1** — Go to [Firebase Console](https://console.firebase.google.com/) → **Add project**
+
+**Step 2** — In your project: **Project Settings → General → Your apps → Add app (Web `</>`)**  
+Copy the `firebaseConfig` object shown and paste it into `login_setup.py`:
+
+```python
+# REPLACE
+config_path = Path(__file__).parent.parent / "login_credentials.json"
+
+try:
+    # Safely open and read the JSON file
+    with open(config_path, 'r') as file:
+        self.firebaseConfig = json.load(file)     
+
+except FileNotFoundError:
+    print(f"❌ CRITICAL ERROR: Could not find credentials at {config_path}")
+    print("Please ensure 'login_credentials.json' exists in your backend folder.")
+    sys.exit(1) # Stop the application safely if credentials are missing
+except json.JSONDecodeError:
+    print(f"❌ CRITICAL ERROR: 'login_credentials.json' is not formatted correctly.")
+    sys.exit(1)
+```
+```python
+# WITH
+self.firebaseConfig = {
+    "apiKey": "Your API Key",
+    "authDomain": "Your Auth Domain",
+    "projectId": "Your Project ID",
+    "databaseURL": "Your Database URL",
+    "storageBucket": "Your Storage Bucket",
+    "messagingSenderId": "Your Messaging Sender ID",
+    "appId": "Your App ID",
+    "measurementId": "Your Measurement ID"
+}
+```
+
+**Step 3** — Enable **Authentication → Sign-in method → Email/Password**
+
+**Step 4** — Create a test user via **Authentication → Users → Add user**, or use **Sign Up** in the app
+
+> ⚠️ Never commit real credentials to a public repository.  
+> Add `login_setup.py` to `.gitignore`, or use environment variables:
+> ```python
+> import os
+> "apiKey": os.environ.get("FIREBASE_API_KEY")
+> ```
+
+### Step 5: Run the Application
 ```bash
 python3 run_frontend.py
 ```
 
-### Step 5: Configure Cameras (via Settings Page)
+The app will:
+1. Show the login screen immediately
+2. Open the main dashboard after successful login
+3. AI models load in the background when you click **Load** on the Camera Monitor page (30–40 seconds, UI stays responsive)
+
+### Step 6: Configure Cameras (via Settings Page)
 
 After launching the app:
 
 1. Navigate to **Settings** page
 2. Enter your active camera IDs (comma-separated, e.g., `0, 1, 2`) → Click **Update Camera List**
-3. (Optional) Assign friendly display names to each camera in the table → Click **Update/Overwrite Camera Names**
+3. (Optional) Assign friendly display names → Click **Update/Overwrite Camera Names**
 
-This populates `backend/camera_config.ini` with:
+This populates `backend/camera_config.ini`:
 ```ini
 [Display Names]
 0 = Gate A - Entrance
@@ -948,21 +1012,12 @@ This populates `backend/camera_config.ini` with:
 2 = Lobby - Main Hall
 ```
 
-Or directly edit `backend/camera_config.ini` (manually) if you prefer (not recommended).
-
----
-
-## Workflow: Camera Setup
-1. Navigate to **Settings** page
-2. Enter camera IDs (e.g., "0,1,2")
-3. Click **[Update]**
-
-### Step 5: First-Time Setup
+### Step 7: First-Time Setup
 
 1. **Dashboard**: Verify system statistics load correctly
-2. **Camera Monitor**: Click [Load] → [Start] to begin monitoring
+2. **Camera Monitor**: Click [Load] → wait for "✅ AI Models Loaded" (30–40s) → click [Start]
 3. **Registration**: Enroll first person (3-angle capture)
-4. **Recognition**: Return to Camera Monitor—newly registered face should be detected
+4. **Recognition**: Return to Camera Monitor — newly registered face should be detected
 
 ---
 
@@ -976,8 +1031,6 @@ Sr No.,Name,ID,Image Path
 1,John Doe,P001,dataset/images/p1_front.jpeg
 2,John Doe,P001,dataset/images/p1_left.jpeg
 3,John Doe,P001,dataset/images/p1_right.jpeg
-4,Sarah Smith,P002,dataset/images/p2_front.jpeg
-...
 ```
 
 **embeddings.csv** (Embedding Metadata):
@@ -986,42 +1039,30 @@ ID,Name,Embedding Key,Timestamp
 P001,John Doe,P001_front,2024-06-04 10:30:45
 P001,John Doe,P001_left,2024-06-04 10:30:46
 P001,John Doe,P001_right,2024-06-04 10:30:47
-...
 ```
 
 **face_info.csv** (Face Quality Metrics):
 ```csv
 ID,Landmarks,Quality Score,Angle,Timestamp
 P001,[[x,y],...],0.95,front,2024-06-04 10:30:45
-...
 ```
 
 ---
 
 ## Configuration Reference
 
-### ApplicationConfig (frontend/config.py)
-
+### ApplicationConfig (`frontend/config.py`)
 ```python
-# Recognition
-DEFAULT_CONFIDENCE_THRESHOLD = 85      # % threshold for face match
-
-# Camera
+DEFAULT_CONFIDENCE_THRESHOLD = 85   # % threshold for face match
 DEFAULT_FPS = 30
-DEFAULT_RESOLUTION = "1080p"
-
-# UI
 SIDEBAR_WIDTH = 250
 TOPBAR_HEIGHT = 60
-
-# Colors
-COLOR_PRIMARY = "#00bfff"       # Cyan
-COLOR_BACKGROUND = "#0a0e27"   # Dark blue
-COLOR_SUCCESS = "#4caf50"       # Green
+COLOR_PRIMARY = "#00bfff"
+COLOR_BACKGROUND = "#0a0e27"
+COLOR_SUCCESS = "#4caf50"
 ```
 
-### camera_config.ini
-
+### `backend/camera_config.ini`
 ```ini
 [Display Names]
 0 = Gate A - Entrance
@@ -1035,21 +1076,27 @@ COLOR_SUCCESS = "#4caf50"       # Green
 
 | Issue | Cause | Solution |
 |-------|-------|----------|
-| "No camera found" on Load | Camera not detected by system | Check `ls /dev/video*` on Linux; verify USB connection |
-| "Failed to initialize MTCNN" | GPU/CUDA issue or PyTorch not installed | Run `pip install torch torchvision` or use CPU fallback |
+| "Invalid email or password" on login | Wrong credentials or unregistered email | Use Sign Up first, or check Firebase Console → Authentication |
+| Login screen hangs briefly | Firebase SDK initializing network connection | Normal on first launch; subsequent logins are faster |
+| Load takes 30–40 seconds | MTCNN + FaceNet loading in background thread | Expected — UI stays responsive; wait for the ✅ success message |
+| UI freezes during Load | ModelLoaderThread not used | Should not happen; check that `_load_button` starts the thread |
+| "No camera found" on Start | Camera not detected by system | Check `ls /dev/video*` on Linux; verify USB connection |
+| "Failed to initialize MTCNN" | PyTorch not installed or CUDA error | Run `pip install torch torchvision` or use CPU fallback |
 | "CSV file not found" | Dataset folder missing | Extract `dummy_dataset.zip` or create dataset structure |
 | Registration hangs | Face detection timeout | Ensure face is clearly visible; try different lighting |
-| UI freezes during remove | Main thread blocking | Wait—removal runs in background thread, UI will respond |
+| UI freezes during remove | Main thread blocking | Wait — removal runs in background thread |
 | Settings not persisting | Config file permissions | Check write permissions on `backend/camera_config.ini` |
+| Password reset email not arriving | Incorrect email or spam filter | Check spam folder; verify email is registered in Firebase |
 
 ---
 
 ## Performance Tips
 
-1. **GPU Acceleration**: Install CUDA + cuDNN for 10x faster face detection
-2. **Multi-Camera**: Limit to 4 simultaneous cameras for optimal performance
-3. **Recognition Threshold**: Increase to 90% for stricter matching (fewer false positives)
-4. **Resolution**: Reduce camera resolution (480p vs 1080p) for smoother streaming
+1. **GPU Acceleration**: Install CUDA + cuDNN for 10x faster face detection and model loading
+2. **Background Loading**: `ModelLoaderThread` keeps the UI fully responsive during the 30–40s model load — navigate other pages while it loads
+3. **Multi-Camera**: Limit to 4 simultaneous cameras for optimal performance
+4. **Recognition Threshold**: Increase to 90% for stricter matching (fewer false positives)
+5. **Resolution**: Reduce camera resolution (480p vs 1080p) for smoother streaming
 
 ---
 
@@ -1060,19 +1107,13 @@ COLOR_SUCCESS = "#4caf50"       # Green
 - [ ] Export reports (CSV, PDF)
 - [ ] Alert system for unauthorized persons
 - [ ] Database backup & restoration
-- [ ] Multi-user authentication
+- [x] ~~Multi-user authentication~~ *(Done — Firebase Email/Password auth)*
 - [ ] REST API for integration with other systems
+- [ ] Role-based access control (admin vs viewer)
 
 ---
 
-**Last Updated**: June 4, 2024
-**Version**: 1.0.0
+**Last Updated**: June 12, 2025
+**Version**: 1.1.0
 **Author**: Vivek Avhad
-**License**: MIT (or your chosen license)
-   python3 run_frontend.py
-   ```
-
-## Notes
-- The app expects the backend dataset folder and embedding data to exist.
-- Packaging for Ubuntu is possible, but native dependencies like PySide6, OpenCV, and PyTorch must be bundled correctly.
-- This README is intentionally concise and focused on project purpose, structure, and main UI flows.
+**License**: MIT
