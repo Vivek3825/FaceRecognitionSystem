@@ -28,8 +28,6 @@ class SidebarWidget(QFrame):
         """Initialize the sidebar UI"""
         
         # ── MAIN SIDEBAR STYLING ──
-        # This gives the entire sidebar a solid, distinct background color
-        # and styles the navigation buttons dynamically.
         self.setStyleSheet("""
             QFrame#sidebar {
                 background-color: #121626;  /* Distinct dark background for the whole sidebar */
@@ -82,8 +80,6 @@ class SidebarWidget(QFrame):
             "dashboard": "Dashboard",
             "camera": "Camera Monitor",
             "registration": "Registration",
-            # "search": "Person Search",      
-            # "reports": "Reports",
             "settings": "Settings"
         }
         
@@ -94,26 +90,28 @@ class SidebarWidget(QFrame):
             layout.addWidget(btn)
         
         # This stretch pushes the logout button to the bottom. 
-        # Because the QFrame now has a background color, it will look unified!
         layout.addStretch()
         
-        # ── LOGOUT BUTTON ──
-        logout_btn = QPushButton("Logout")
-        logout_btn.setMinimumHeight(45)
-        logout_btn.setCursor(Qt.PointingHandCursor)
-        logout_btn.setStyleSheet("""
+        # ── LOGOUT BUTTON (FIXED) ──
+        # We use self.logout_btn here so MainWindow can access it!
+        self.logout_btn = QPushButton("Logout")
+        self.logout_btn.setMinimumHeight(45)
+        self.logout_btn.setCursor(Qt.PointingHandCursor)
+        self.logout_btn.setStyleSheet("""
             QPushButton {
                 background-color: #ff4444;
                 color: white;
                 font-weight: bold;
                 border-radius: 6px;
-                margin: 0px 20px; /* Keeps it padded inside the sidebar */
+                margin: 0px 20px;
             }
             QPushButton:hover {
                 background-color: #ff5555;
             }
         """)
-        layout.addWidget(logout_btn)
+        
+        # Make sure we add 'self.logout_btn' to the layout, not just 'logout_btn'
+        layout.addWidget(self.logout_btn)
         
         self.setLayout(layout)
         

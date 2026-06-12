@@ -2,35 +2,31 @@
 Main application window for Face Recognition System
 """
 
-from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-    QStackedWidget, QApplication
-)
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QFont, QIcon
+import sys
 from pathlib import Path
 import shutil
 
-from frontend.widgets import SidebarWidget, TopBarWidget
-# from frontend.pages import (
-#     DashboardPage, CameraMonitorPage, PersonSearchPage,
-#     RegistrationPage, ReportsPage, SettingsPage
-# )
+from PySide6.QtWidgets import (
+    QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
+    QStackedWidget, QApplication, QDialog, QMessageBox
+)
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QFont, QIcon
 
+from frontend.pages.login_page import LoginPage
+from frontend.widgets import SidebarWidget, TopBarWidget
 from frontend.pages import (
     DashboardPage, CameraMonitorPage, RegistrationPage,
     SettingsPage 
-    )
-
-#from backend.src.multi_camera_manager import MultiCameraManager
-# from backend.src.person_registration import PersonRegistrationSystem
-
+)
 
 class MainWindow(QMainWindow):
     """Main application window"""
     
     def __init__(self):
         super().__init__()
+
+        self.logout_var = False 
 
         base_dir = Path(__file__).parent.parent
         dataset_dir = base_dir / "backend" / "dataset"
@@ -77,6 +73,9 @@ class MainWindow(QMainWindow):
         # Sidebar
         self.sidebar = SidebarWidget()
         self.sidebar.page_changed.connect(self.on_page_changed)
+        
+        self.sidebar.logout_btn.clicked.connect(self.handle_logout)
+        
         content_layout.addWidget(self.sidebar)
         
         # Stacked widget for pages
@@ -86,10 +85,9 @@ class MainWindow(QMainWindow):
         # Create pages
         self.pages = {
             "dashboard": DashboardPage(),
-            "camera": CameraMonitorPage(),
+            # "camera": CameraMonitorPage(camera_manager=camera_manager),  # Pass the camera manager to the camera page
+            "camera": CameraMonitorPage(),  # For now, we won't pass the camera manager to avoid initialization issues during development.
             "registration": RegistrationPage(),
-            #"search": PersonSearchPage(),
-            #"reports": ReportsPage(),
             "settings": SettingsPage(),
         }
         
@@ -115,9 +113,7 @@ class MainWindow(QMainWindow):
         self.datetime_timer.start(1000)
     
     def apply_stylesheet(self):
-        """Apply QSS stylesheet to application"""
         stylesheet_path = Path(__file__).parent / "styles" / "dark_theme.qss"
-        
         try:
             with open(stylesheet_path, 'r') as f:
                 stylesheet = f.read()
@@ -126,25 +122,47 @@ class MainWindow(QMainWindow):
             print(f"Warning: Stylesheet not found at {stylesheet_path}")
     
     def on_page_changed(self, page_name):
-        """Handle page navigation"""
         self.show_page(page_name)
     
     def show_page(self, page_name):
-        """Show a specific page"""
         if page_name in self.pages:
             page_index = list(self.pages.keys()).index(page_name)
             self.stacked_widget.setCurrentIndex(page_index)
 
+    def handle_logout(self):
+        # Optional: Add a confirmation pop-up here if you want!
+        self.logout_var = True  
+        self.close()  
+
 
 def main():
     """Main entry point"""
-    app = QApplication([])
-    
-    window = MainWindow()
-    window.show()
-    
-    exit(app.exec())
+    app = QApplication(sys.argv)
 
+    logout_var = True  
+
+    while logout_var:
+
+        login = LoginPage()
+        
+        if login.exec() == QDialog.Accepted:
+            logout_var = False # User logged in, turn off the flag for now
+            
+            window = MainWindow() 
+            window.show()
+            
+            app.exec()  # Notice sys.exit() is gone! It pauses here until window closes.
+            
+            if window.logout_var == True:
+                logout_var = True # They clicked logout! Set to True so the loop restarts
+            else:
+                break 
+                
+        else:
+            # User clicked 'X' on the Login Screen
+            break 
+
+    sys.exit(0) # This cleanly kills Python once the loop is broken.
 
 if __name__ == "__main__":
     main()
