@@ -85,8 +85,7 @@ class MainWindow(QMainWindow):
         # Create pages
         self.pages = {
             "dashboard": DashboardPage(),
-            # "camera": CameraMonitorPage(camera_manager=camera_manager),  # Pass the camera manager to the camera page
-            "camera": CameraMonitorPage(),  # For now, we won't pass the camera manager to avoid initialization issues during development.
+            "camera": CameraMonitorPage(), 
             "registration": RegistrationPage(),
             "settings": SettingsPage(),
         }
